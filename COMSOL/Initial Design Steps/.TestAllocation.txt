@@ -1,0 +1,5 @@
+This file contains the list compiling the relevant information for each test which has a numeric value assigned for simplicity.
+The COMSOL files are stored within the GitHub repo, the COMSOL output should be directly into OneDrive, the outputs consist mostly of screen grabs, or 3D vector valued functions or lower order spatial variables. Rarely single values (such as inductance, resistance, forces/torques, etc. may be output)
+
+Test 1 - 
+FILL IN RELEVANT INFO
