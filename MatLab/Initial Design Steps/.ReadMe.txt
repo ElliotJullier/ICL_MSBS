@@ -1,0 +1,1 @@
+This folder contains the MatLab scripts supplementary to the COMSOL design steps, they are either used for simple analytical work (Biot-Savart) or graphing COMSOL results in a consistent style.
