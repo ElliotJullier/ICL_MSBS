@@ -1,5 +1,17 @@
 This file contains the list compiling the relevant information for each test which has a numeric value assigned for simplicity.
 The COMSOL files are stored within the GitHub repo, the COMSOL output should be directly into OneDrive, the outputs consist mostly of screen grabs, or 3D vector valued functions or lower order spatial variables. Rarely single values (such as inductance, resistance, forces/torques, etc. may be output)
 
+Default Variables:
+characteristic length L: 18 [in] (0.46 cm)
+coil height: 30 [cm]
+assumed wire diameter: 0.5 [in]
+number of turns N: 1000
+coil current: 20[A]
+
 Test 1 - 
-FILL IN RELEVANT INFO
+Single coil, square geometry, uncored, air gap of L/2, Normal/Fine/Extra Fine/Extremely Fine Meshes compared
+
+Test 2 - 
+Double Coil, square geometry, uncored, inner coil gap of L/2, coil gap of L, Fine Mesh
+coil height: 15cm
+coil 2 current: -20 [A]
