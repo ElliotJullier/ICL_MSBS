@@ -1,0 +1,87 @@
+function mag_field = Coil_Field(R, r, N, wire_R, wire_r, outputField)
+% Simple volume integration of the Biot-Savart law, for constant current
+% (density) the field shape is dependant only only coil geometry
+%
+% Coil geometry assumed to be an annular cylinder.
+% Biot-Savart input assumes the entire volume as one thick wire, magically
+% superposed N times over the same geometry, current density must be
+% reduced accordingly so as not to overrepresent the cross-sectional area
+% of wire actually running current
+%
+%  ----- INPUTS -----
+% R [m]: outer radius of the overall coil
+%
+% r [m]: radius of the hole in the coil
+%
+% N [-]: number of turns of wire in the radius
+%
+% wire_R [m]: outer radius of the wire used for coil
+%
+% wire_r [m]: inner radius of the annular cross-section of the wire, used
+% to work out reduced current density factor from cross-sectional area.
+%
+% outputField [m^3]: an Nx3 matrix containing the coordinates (relative to
+% the center of gravity (CoG) of the coil (x, y, z) triplet configuration, in metres.
+%
+% ----- OUPUT(S) -----
+% mag_field [T^3]: An Nx3 matrix containing the (Bx, By, Bz) magnetic
+% flux density components in Tesla. Each column is associated to the
+% equivalently indexed column in outputField.
+
+
+% Required coil height to fill volume
+h = (pi*wire_R^2*N)/((R-r)*0.7); % area matching including a 70% packing efficiency factor
+% Maximum packing density of spheres is 74% and of circles is 91%, 3D
+% geometry of coils + space for structural supports mean 70% is
+% conservative estimate
+
+% Discretising coil
+grid_discretisation_level = 30;
+theta_sweep_edge = linspace(0, 2*pi, 3*grid_discretisation_level+1);
+theta_sweep_centre = theta_sweep_edge(1:end-1) + (theta_sweep_edge(2:end)-theta_sweep_edge(1:end-1))/2;
+dtheta = theta_sweep_edge(2) - theta_sweep_edge(1);
+R_sweep_edge = linspace(r, R, grid_discretisation_level+1);
+R_sweep_centre = R_sweep_edge(1:end-1) + (R_sweep_edge(2:end)-R_sweep_edge(1:end-1))/2;
+dR = R_sweep_edge(2) - R_sweep_edge(1);
+z_sweep_edge = linspace(-h/2, h/2, grid_discretisation_level+1);
+z_sweep_centre = z_sweep_edge(1:end-1) + (z_sweep_edge(2:end)-z_sweep_edge(1:end-1))/2;
+dz = z_sweep_edge(2) - z_sweep_edge(1);
+
+[R_grid, theta_grid, z_grid] = meshgrid(R_sweep_centre, theta_sweep_centre, z_sweep_centre);
+
+theta_grid = reshape(theta_grid, 1, []); % Making a simpler array for faster operations, don't care about the grid as no 3D plotting occuring
+R_grid = reshape(R_grid, 1, []);
+dV = R_grid.*dtheta*dz*dR;
+z_grid = reshape(z_grid, 1, []);
+
+coil_pos = [R_grid.*cos(theta_grid); R_grid.*sin(theta_grid); z_grid]; % Makes a 3xN and in cartesian coordinates now
+current_dir = mod(theta_grid + pi/2, 2*pi);
+current_dir = [cos(current_dir); sin(current_dir); zeros(1, length(z_grid))]; % Cartesian
+
+% Shows current lines at the discretisation dots
+%quiver3(coil_pos(1, :), coil_pos(2, :), coil_pos(3, :), current_dir(1, :), current_dir(2, :), current_dir(3, :));
+
+% Plot to polygon covering the magnet
+%magnetshape = alphaShape(coil_pos', r);
+%plot(magnetshape);
+
+% Plot cleanup and coords where we want to investigate B-field
+%axis equal;
+%hold on;
+%plot3(outputField(1, :), outputField(2, :), outputField(3, :), 'o');
+
+mag_field = zeros(3, length(outputField)); % Initialising
+for i = 1:length(outputField)
+    rel_pos = outputField(:, i) - coil_pos;
+    quiver3(coil_pos(1, :), coil_pos(2, :), coil_pos(3, :), rel_pos(1, :), rel_pos(2, :), rel_pos(3, :), 'off');
+    mag_field(:, i) = sum(cross(current_dir, rel_pos).*repmat(dV, [3, 1])./vecnorm(rel_pos).^3, 2); % Performing matrix operation of Biot-Savart over the whole coil for this one point in space and summing all their contributions
+end
+wire_CS_ratio = 1 - (wire_r/wire_R).^2;
+mag_field = N*10^-7*wire_CS_ratio*mag_field;
+
+
+
+
+
+
+

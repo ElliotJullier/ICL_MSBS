@@ -1,0 +1,15 @@
+clear
+close all;
+
+%output_field = [linspace(-1, 1, 21); repmat([0; -0.5], [1 21])];
+x = linspace(-1, 1, 50);
+y = linspace(-1, 1, 50);
+z = [0];
+output_field = coords_to_areaGrid(x, y, z);
+
+output_field = coord
+
+test_mag_field = Coil_Field(0.45/2, 0.2/2, 400, 0.01/2, 0, output_field);
+I = 100; % Amps
+test_mag_field = test_mag_field*I;
+quiver3(output_field(1, :), output_field(2, :), output_field(3, :), test_mag_field(1, :), test_mag_field(2, :), test_mag_field(3, :));
