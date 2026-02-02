@@ -36,14 +36,14 @@ h = (pi*wire_R^2*N)/((R-r)*0.7); % area matching including a 70% packing efficie
 % conservative estimate
 
 % Discretising coil
-grid_discretisation_level = 30;
-theta_sweep_edge = linspace(0, 2*pi, 3*grid_discretisation_level+1);
+grid_discretisation_level = 10;
+theta_sweep_edge = linspace(0, 2*pi, 4*grid_discretisation_level+1); % increased angular resolution as affects the field direction more
 theta_sweep_centre = theta_sweep_edge(1:end-1) + (theta_sweep_edge(2:end)-theta_sweep_edge(1:end-1))/2;
 dtheta = theta_sweep_edge(2) - theta_sweep_edge(1);
 R_sweep_edge = linspace(r, R, grid_discretisation_level+1);
 R_sweep_centre = R_sweep_edge(1:end-1) + (R_sweep_edge(2:end)-R_sweep_edge(1:end-1))/2;
 dR = R_sweep_edge(2) - R_sweep_edge(1);
-z_sweep_edge = linspace(-h/2, h/2, grid_discretisation_level+1);
+z_sweep_edge = linspace(0, h, grid_discretisation_level+1);% For positioning reasons, we start at the 'bottom' of the coil
 z_sweep_centre = z_sweep_edge(1:end-1) + (z_sweep_edge(2:end)-z_sweep_edge(1:end-1))/2;
 dz = z_sweep_edge(2) - z_sweep_edge(1);
 
@@ -73,7 +73,7 @@ current_dir = [cos(current_dir); sin(current_dir); zeros(1, length(z_grid))]; % 
 mag_field = zeros(3, length(outputField)); % Initialising
 for i = 1:length(outputField)
     rel_pos = outputField(:, i) - coil_pos;
-    quiver3(coil_pos(1, :), coil_pos(2, :), coil_pos(3, :), rel_pos(1, :), rel_pos(2, :), rel_pos(3, :), 'off');
+    %quiver3(coil_pos(1, :), coil_pos(2, :), coil_pos(3, :), rel_pos(1, :), rel_pos(2, :), rel_pos(3, :), 'off');
     mag_field(:, i) = sum(cross(current_dir, rel_pos).*repmat(dV, [3, 1])./vecnorm(rel_pos).^3, 2); % Performing matrix operation of Biot-Savart over the whole coil for this one point in space and summing all their contributions
 end
 wire_CS_ratio = 1 - (wire_r/wire_R).^2;
