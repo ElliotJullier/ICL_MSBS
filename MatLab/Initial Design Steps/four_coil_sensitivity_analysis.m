@@ -1,6 +1,8 @@
 clear
 close all;
 
+% ------------------------- Use saved coil and magnetic field files -------------------------
+
 
 % ------------------------- Coil geometry parameters -------------------------
 coil_outer_radius = 0.456/2 ;% m
@@ -32,10 +34,10 @@ z = linspace(-coil_vert_pos, coil_vert_pos, 100);
 output_dims = [length(y), length(x), length(z)]; % y and x inverted because of the way meshgrid works
 
 [X, Y, Z] = meshgrid(x, y, z);
-output_field = [reshape(X, 1, []); reshape(Y, 1, []); reshape(Z, 1, [])];
+output_coord_list = [reshape(X, 1, []); reshape(Y, 1, []); reshape(Z, 1, [])];
 
 % Initialise mag field of correct shape
-mag_field = zeros(size(output_field));
+mag_field = zeros(size(output_coord_list));
 
 % HOW ARE WE DOING COIL CURRENT TO MATCH THE RIGHT FORCE
 I_front = 50;
@@ -43,21 +45,21 @@ I_rear = 30;
 
 % ------------------------- Summing up coils on mag field -------------------------
 % % Coil 1
-local_output_field = coord_global2local(output_field, coil1_rel_pos);
+local_output_field = coord_global2local(output_coord_list, coil1_rel_pos);
 mag_field = mag_field - I_front*Coil_Field(coil_outer_radius, coil_inner_radius, N, wire_outer_radius, wire_inner_radius, local_output_field);
 
 % Coil 3
-local_output_field = coord_global2local(output_field, coil3_rel_pos);
+local_output_field = coord_global2local(output_coord_list, coil3_rel_pos);
 mag_field = mag_field + I_front*Coil_Field(coil_outer_radius, coil_inner_radius, N, wire_outer_radius, wire_inner_radius, local_output_field);
 
 % Coil 5
 
-local_output_field = coord_global2local(output_field, coil5_rel_pos);
+local_output_field = coord_global2local(output_coord_list, coil5_rel_pos);
 mag_field = mag_field - I_rear*Coil_Field(coil_outer_radius, coil_inner_radius, N, wire_outer_radius, wire_inner_radius, local_output_field);
 
 % Coil 7
 
-local_output_field = coord_global2local(output_field, coil7_rel_pos);
+local_output_field = coord_global2local(output_coord_list, coil7_rel_pos);
 mag_field = mag_field + I_rear*Coil_Field(coil_outer_radius, coil_inner_radius, N, wire_outer_radius, wire_inner_radius, local_output_field);
 % ------------------------- End of coils -------------------------
 
@@ -69,27 +71,20 @@ coil3_shp = extract_coilShape(coil_outer_radius, coil_inner_radius, N, wire_oute
 coil5_shp = extract_coilShape(coil_outer_radius, coil_inner_radius, N, wire_outer_radius, coil5_rel_pos);
 coil7_shp = extract_coilShape(coil_outer_radius, coil_inner_radius, N, wire_outer_radius, coil7_rel_pos);
 
-plot(coil1_shp);
-hold on;
-axis equal;
-box on;
-plot(coil3_shp);
-plot(coil5_shp);
-plot(coil7_shp);
-xlabel("$x$ [m]", 'Interpreter','latex');
-ylabel("$y$ [m]", 'Interpreter','latex');
-zlabel("$z$ [m]", 'Interpreter','latex');
 
-plotcube([1.52 0.46 0.46], [-1.52/2, -0.46/2, -0.46/2], 0, [0 0 0]); % Generate wind tunnel bounding box
+figStruct = CoilGeom_setupFig({coil1_shp, coil3_shp, coil5_shp, coil7_shp});
 
 % ------------------------- Plotting Magnetic Field Surfaces -------------------------
 
 % ------------------------- Input masking -------------------------
-magField_indices = abs(output_field(2, :)-0)<=1e-10; % Absolute change of variable - desired level must be below 1e-10
+dir = "z"; % "x" means plotting Bx, "y" and "z" affect equivalently
+
+magField_indices = abs(output_coord_list(2, :)-0)<=1e-10; % Absolute change of variable - desired level must be below 1e-10
 % Here we are masking such that out of the complete set of calculated
 % variables, a value of y = 0 is taken (within rounding error)
-dir = "x"; % "x" means plotting Bx, "y" and "z" affect equivalently
-
 % Plot as many surfaces as required
-Coil_surf_plot(magField_indices, X, Y, Z, mag_field, outputDims, dir)
+fig_surf1 = Coil_surf_plot(figStruct.ax, magField_indices, X, Y, Z, mag_field, output_dims, dir);
+
+magField_indices = abs(output_coord_list(3, :)-0)<=1e-10;
+fig_surf2 = Coil_surf_plot(figStruct.ax, magField_indices, X, Y, Z, mag_field, output_dims, dir);
 
