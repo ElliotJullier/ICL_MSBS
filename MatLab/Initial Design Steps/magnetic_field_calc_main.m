@@ -1,7 +1,7 @@
 clear
 close all;
 
-save_filename = "coilfield_run1.mat";
+save_filename = "coilfield_run2.mat";
 
 coil_outer_radius = 0.456/2 ;
 coil_inner_radius = 0.2/2;
@@ -25,8 +25,8 @@ coil_defs = { ...
 };
 
 x = linspace(-0.75, 0.75, 200);
-y = [0];
 z = linspace(-coil_vert_pos, coil_vert_pos, 100);
+y = z; % not technically coil_vert_pos but it fills the wind tunnel as required
 
 output_dims = [length(y), length(x), length(z)];
 
@@ -54,12 +54,12 @@ for k = 1:nCoils
     local_output_field = coord_global2local(output_coord_list, coils(k).rel_pos);
 
     mag_field_unit(:, :, k) = Coil_Field( ...
-        geom.coil_outer_radius, ...
-        geom.coil_inner_radius, ...
-        geom.N, ...
-        geom.wire_outer_radius, ...
-        geom.wire_inner_radius, ...
-        local_output_field);
+        geom.coil_outer_radius, geom.coil_inner_radius, geom.N, ...
+        geom.wire_outer_radius, geom.wire_inner_radius, local_output_field, ...
+        "progress", true, "progressStepPercent", 5, "blockSize", 50000);
+
+    fprintf("[%s] Coil %d/%d finished\n", datestr(now,"HH:MM:SS"), k, nCoils);
+
 end
 
 for k = 1:nCoils
