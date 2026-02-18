@@ -1,1 +1,4 @@
 This folder contains the MatLab scripts supplementary to the COMSOL design steps, they are either used for simple analytical work (Biot-Savart) or graphing COMSOL results in a consistent style.
+
+Large files, especially .mat are stored in OneDrive (C:\Users\sense\OneDrive - Imperial College London\PhD\21 Design and Procurement\21-2 EM Coils\MatLab\GitHub Large Data Files)
+Solution for automating MatLab script access unfinished so for now a copy paste into the local folder is needed for running pre-calculated MatLab scripts.
