@@ -1,12 +1,12 @@
 % Plotcube add-on required
 
 clear
-close all;
+% close all;
 
 addpath("functs"); % Code clarity so helper functions sotred here.
 
 % ------------------------- Load saved file -------------------------
-load_filename = "coilfield_run2.mat";
+load_filename = "coilfield_run5.mat";
 [coils, geom, field] = load_coilfield_mat(load_filename);
 
 nCoils = numel(coils);
@@ -76,6 +76,7 @@ I = lsqminnorm(A, b);
 disp("Solved currents (A):");
 disp(I.');
 
+I = [30];
 % ------------------------- Plot planes of the field using solved currents -------------------------
 % Plot coil geometries / wind tunnel box
 figStruct = CoilGeom_setupFig(coils);
