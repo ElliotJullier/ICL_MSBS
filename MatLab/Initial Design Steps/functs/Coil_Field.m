@@ -48,7 +48,8 @@ R_sweep_edge   = linspace(r, R, grid_discretisation_level+1);
 R_sweep_centre = R_sweep_edge(1:end-1) + (R_sweep_edge(2:end)-R_sweep_edge(1:end-1))/2;
 dR = R_sweep_edge(2) - R_sweep_edge(1);
 
-z_sweep_edge   = linspace(0, h, grid_discretisation_level+1);
+% z_sweep_edge   = linspace(0, h, grid_discretisation_level+1);
+z_sweep_edge   = linspace(-h/2, h/2, grid_discretisation_level+1);
 z_sweep_centre = z_sweep_edge(1:end-1) + (z_sweep_edge(2:end)-z_sweep_edge(1:end-1))/2;
 dz = z_sweep_edge(2) - z_sweep_edge(1);
 

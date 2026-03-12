@@ -3,7 +3,7 @@ close all;
 
 addpath("functs"); % Code clarity so helper functions sotred here.
 
-save_filename = "coilfield_run8.mat";
+save_filename = "coilfield_run13.mat";
 
 coil_outer_radius = 0.456/2 ;
 coil_inner_radius = 0.2/2;
@@ -15,7 +15,9 @@ coil_vert_pos = 0.456/2;
 coil_streamwise_pos = 0.3;
 
 % rel_pos expects [x, y, z, yaw, pitch, roll]
-coil1_rel_pos = [ 2*coil_streamwise_pos, 0, coil_vert_pos, 0, 0, 0];
+% coil0_rel_pos = [0, 0, 0, 0, pi/2, 0];
+coil0_rel_pos = [0.5, 0, 0, 0, pi/2, 0];
+% coil1_rel_pos = [ coil_streamwise_pos, 0, coil_vert_pos, 0, 0, 0];
 % coil2_rel_pos = [ coil_streamwise_pos, coil_vert_pos, 0, 0, 0, -pi/2];
 % coil3_rel_pos = [ coil_streamwise_pos, 0, -coil_vert_pos, 0,  pi, 0];
 % coil4_rel_pos = [ coil_streamwise_pos, -coil_vert_pos, 0, 0, 0, pi/2];
@@ -25,7 +27,8 @@ coil1_rel_pos = [ 2*coil_streamwise_pos, 0, coil_vert_pos, 0, 0, 0];
 % coil8_rel_pos = [ -coil_streamwise_pos, -coil_vert_pos, 0, 0, 0, pi/2];
 
 coil_defs = { ...
-    "coil1", coil1_rel_pos; ...
+    "coil0", coil0_rel_pos; ...
+    % "coil1", coil1_rel_pos; ...
     % "coil2", coil2_rel_pos; ...
     % "coil3", coil3_rel_pos; ...
     % "coil4", coil4_rel_pos; ...
@@ -64,10 +67,13 @@ mag_field_unit = zeros(3, size(output_coord_list, 2), nCoils);
 for k = 1:nCoils
     local_output_field = coord_global2local(output_coord_list, coils(k).rel_pos);
 
-    mag_field_unit(:, :, k) = Coil_Field( ...
+    local_mag_field = Coil_Field( ...
         geom.coil_outer_radius, geom.coil_inner_radius, geom.N, ...
         geom.wire_outer_radius, geom.wire_inner_radius, local_output_field, ...
         "progress", true, "progressStepPercent", 5, "blockSize", 50000);
+
+    % Rotate field vectors from coil-local components back to global components
+    mag_field_unit(:, :, k) = coord_local2global(local_mag_field, [0, 0, 0, coils(k).rel_pos(4:6)]);
 
     fprintf("[%s] Coil %d/%d finished\n", datestr(now,"HH:MM:SS"), k, nCoils);
 

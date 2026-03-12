@@ -1,12 +1,12 @@
 % Plotcube add-on required
 
 clear
-% close all;
+close all;
 
-addpath("functs"); % Code clarity so helper functions sotred here.
+addpath("functs"); % Code clarity so helper functions stored here.
 
 % ------------------------- Load saved file -------------------------
-load_filename = "coilfield_run5.mat";
+load_filename = "coilfield_run13.mat";
 [coils, geom, field] = load_coilfield_mat(load_filename);
 
 nCoils = numel(coils);
@@ -23,7 +23,7 @@ G = build_percoil_gradient_interpolants(field);
 % [x, y, z, yaw, pitch, roll]
 magnet_pos = [0, 0, 0, 0, 0, 0]; % The position is only used to calculate currents, not used to generate the plots, whereas magnet rotation will influence the forces
 
-% Magnet dipole moment 
+% Magnet dipole moment
 mu_0 = 1.2256*10^-6; % CONST Magnetic permeability of free space in N/A^2
 
 magnet_remanence = 1.5; % Tesla
@@ -77,26 +77,38 @@ disp("Solved currents (A):");
 disp(I.');
 
 I = [30];
+
 % ------------------------- Plot planes of the field using solved currents -------------------------
 % Plot coil geometries / wind tunnel box
 figStruct = CoilGeom_setupFig(coils);
 
 % Choose component to plot: "x", "y" or "z"
-dir = "z";
+dir = "x";
 
+% ------------------------- Existing arbitrary-plane sampling (commented out for now) -------------------------
 % Planes centred at origin
-planePoint = [0, 0, 0];
+% planePoint = [0, 0, 0];
+%
+% % XY plane: normal z
+% [X_xy, Y_xy, Z_xy, B_xy] = plane_sample_field_percoil(field, F, planePoint, [0, 0, 1], dir, I);
+% add_plane(figStruct.ax, X_xy, Y_xy, Z_xy, B_xy, dir);
+%
+% % XZ plane: normal y
+% [X_xz, Y_xz, Z_xz, B_xz] = plane_sample_field_percoil(field, F, planePoint, [0, 1, 0], dir, I);
+% add_plane(figStruct.ax, X_xz, Y_xz, Z_xz, B_xz, dir);
+%
+% % YZ plane: normal x
+% [X_yz, Y_yz, Z_yz, B_yz] = plane_sample_field_percoil(field, F, planePoint, [1, 0, 0], dir, I);
+% add_plane(figStruct.ax, X_yz, Y_yz, Z_yz, B_yz, dir);
 
-% XY plane: normal z
-[X_xy, Y_xy, Z_xy, B_xy] = plane_sample_field_percoil(field, F, planePoint, [0, 0, 1], dir, I);
+% ------------------------- Direct plotting of fundamental planes at origin -------------------------
+[X_xy, Y_xy, Z_xy, B_xy] = get_fundamental_plane(field, I, dir, "xy", 0);
 add_plane(figStruct.ax, X_xy, Y_xy, Z_xy, B_xy, dir);
 
-% XZ plane: normal y
-[X_xz, Y_xz, Z_xz, B_xz] = plane_sample_field_percoil(field, F, planePoint, [0, 1, 0], dir, I);
+[X_xz, Y_xz, Z_xz, B_xz] = get_fundamental_plane(field, I, dir, "xz", 0);
 add_plane(figStruct.ax, X_xz, Y_xz, Z_xz, B_xz, dir);
 
-% YZ plane: normal x
-[X_yz, Y_yz, Z_yz, B_yz] = plane_sample_field_percoil(field, F, planePoint, [1, 0, 0], dir, I);
+[X_yz, Y_yz, Z_yz, B_yz] = get_fundamental_plane(field, I, dir, "yz", 0);
 add_plane(figStruct.ax, X_yz, Y_yz, Z_yz, B_yz, dir);
 
 % ------------------------- Local helper -------------------------
@@ -113,5 +125,70 @@ function add_plane(ax, X, Y, Z, B, dir)
         clim(ax, [-1, 1]);
     else
         clim(ax, [-Bmax, Bmax]);
+    end
+end
+
+function [X_plane, Y_plane, Z_plane, B_plane] = get_fundamental_plane(field, I, dir, planeName, planeValue)
+    % This function extracts one of the stored fundamental planes directly
+    % from the calculated 3D field without interpolation.
+
+    mag_field = combine_coil_fields(field.mag_field_unit, I);
+
+    switch string(dir)
+        case "x"
+            comp = 1;
+        case "y"
+            comp = 2;
+        case "z"
+            comp = 3;
+        otherwise
+            error('dir must be "x", "y", or "z".');
+    end
+
+    Ny = numel(field.y);
+    Nx = numel(field.x);
+    Nz = numel(field.z);
+
+    B_full = reshape(mag_field(comp,:), [Ny, Nx, Nz]);
+
+    switch lower(string(planeName))
+        case "xy"
+            [~, iz] = min(abs(field.z - planeValue));
+
+            X_plane = squeeze(field.X(:,:,iz));
+            Y_plane = squeeze(field.Y(:,:,iz));
+            Z_plane = squeeze(field.Z(:,:,iz));
+            B_plane = squeeze(B_full(:,:,iz));
+
+        case "xz"
+            [~, iy] = min(abs(field.y - planeValue));
+
+            X_plane = squeeze(field.X(iy,:,:));
+            Y_plane = squeeze(field.Y(iy,:,:));
+            Z_plane = squeeze(field.Z(iy,:,:));
+            B_plane = squeeze(B_full(iy,:,:));
+
+            % Make dimensions consistent for surf
+            B_plane = B_plane.';
+            X_plane = X_plane.';
+            Y_plane = Y_plane.';
+            Z_plane = Z_plane.';
+
+        case "yz"
+            [~, ix] = min(abs(field.x - planeValue));
+
+            X_plane = squeeze(field.X(:,ix,:));
+            Y_plane = squeeze(field.Y(:,ix,:));
+            Z_plane = squeeze(field.Z(:,ix,:));
+            B_plane = squeeze(B_full(:,ix,:));
+
+            % Make dimensions consistent for surf
+            B_plane = B_plane.';
+            X_plane = X_plane.';
+            Y_plane = Y_plane.';
+            Z_plane = Z_plane.';
+
+        otherwise
+            error('planeName must be "xy", "xz", or "yz".');
     end
 end
