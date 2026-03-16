@@ -19,12 +19,12 @@ function output_grid = coord_local2global(input_grid, relative_position)
 % roll [rad]: instrinsic rotation around new x-axis (after yaw and pitch
 % rotations)
 
-x_trans = -relative_position(1);
-y_trans = -relative_position(2);
-z_trans = -relative_position(3);
-yaw     = -relative_position(4);
-pitch   = -relative_position(5);
-roll    = -relative_position(6);
+x_trans = relative_position(1);
+y_trans = relative_position(2);
+z_trans = relative_position(3);
+yaw     = relative_position(4);
+pitch   = relative_position(5);
+roll    = relative_position(6);
 
 % negative of translations taken since FoR translation as input
 % Eg. a coord of (1, 1) in global

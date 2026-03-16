@@ -2,14 +2,20 @@ clear
 close all;
 
 addpath("functs"); % Code clarity so helper functions sotred here.
+addpath("functs/magnetic_calc/");
 
-save_filename = "coilfield_run13.mat";
+save_filename = "coilfield_run3.mat";
 
-coil_outer_radius = 0.456/2 ;
-coil_inner_radius = 0.2/2;
-N = 150;
+% coil_outer_radius = 0.456/2 ;
+% coil_inner_radius = 0.2/2;
+% N = 150;
 wire_outer_radius = 5/1000;
 wire_inner_radius = 0;
+
+coil_outer_radius = 1.4*0.456/2*sqrt(2) ;
+coil_inner_radius = 0.456/2*sqrt(2);
+N = 300;
+
 
 coil_vert_pos = 0.456/2;
 coil_streamwise_pos = 0.3;
@@ -25,6 +31,7 @@ coil0_rel_pos = [0.5, 0, 0, 0, pi/2, 0];
 % coil6_rel_pos = [ -coil_streamwise_pos, coil_vert_pos, 0, 0, 0, -pi/2];
 % coil7_rel_pos = [-coil_streamwise_pos, 0, -coil_vert_pos, 0,  pi, 0];
 % coil8_rel_pos = [ -coil_streamwise_pos, -coil_vert_pos, 0, 0, 0, pi/2];
+coil9_rel_pos = [-0.5, 0, 0, 0, pi/2, 0];
 
 coil_defs = { ...
     "coil0", coil0_rel_pos; ...
@@ -36,6 +43,7 @@ coil_defs = { ...
     % "coil6", coil6_rel_pos; ...
     % "coil7", coil7_rel_pos; ...
     % "coil8", coil8_rel_pos; ...
+    "coil9", coil9_rel_pos; ...
 };
 
 x = linspace(-0.75, 0.75, 200);
