@@ -51,13 +51,13 @@ for k = 1:numel(Q_names)
 end
 
 % ------------------------- Plot settings -------------------------
-plotStyle.clim = [-0.5 0.5]*10^-3;
+% plotStyle.clim = [-0.5 0.5]*10^-3;
 plotStyle.showCoils = true;
 plotStyle.showOrientationReadout = true;
 
 % Optional display names for legend/titles
 plotStyle.caseNames = Q_names;
 
-plotMode = "single_axes";   % "single_axes", "subplots", "separate_figures"
+plotMode = "subplots";   % "single_axes", "subplots", "separate_figures"
 
 plot_field(Q_list, plotMode, plotStyle);

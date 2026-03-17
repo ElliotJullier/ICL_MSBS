@@ -14,19 +14,30 @@ for i = 1:numel(Q_list)
     end
 end
 
-nItems = numel(allItems);
+% ------------------------- Split into planes and lines -------------------------
+planeItems = {};
+lineItems  = {};
 
-% Need overview if any line exists
-hasLine = false;
-for k = 1:nItems
-    if isfield(allItems{k}.result, 's')
-        hasLine = true;
-        break
+for k = 1:numel(allItems)
+    r = allItems{k}.result;
+
+    if isfield(r, 's')
+        lineItems{end+1} = allItems{k}; %#ok<AGROW>
+    else
+        planeItems{end+1} = allItems{k}; %#ok<AGROW>
     end
 end
 
-hasOverview = hasLine;
-nTotal = nItems + hasOverview;
+hasLine = ~isempty(lineItems);
+
+% ------------------------- Layout -------------------------
+if hasLine
+    % 1 overview + one subplot per line
+    nTotal = 1 + numel(lineItems);
+else
+    % one subplot per plane
+    nTotal = numel(planeItems);
+end
 
 nRows = ceil(sqrt(nTotal));
 nCols = ceil(nTotal / nRows);
@@ -34,8 +45,8 @@ nCols = ceil(nTotal / nRows);
 fig = figure;
 idx = 1;
 
-if hasOverview
-    % Use first Q's coils as geometric backdrop
+% ------------------------- Case B: lines exist -> first subplot is overview -------------------------
+if hasLine
     [coils, ~, ~] = load_coilfield_mat(Q_list{1}.input.load_filename);
 
     ax = subplot(nRows, nCols, idx, 'Parent', fig);
@@ -49,13 +60,16 @@ if hasOverview
         plot_coils_on_axes(ax, coils);
     end
 
-    for k = 1:nItems
-        r = allItems{k}.result;
-        if isfield(r, 's')
-            plot3(ax, r.X, r.Y, r.Z, 'r-', 'LineWidth', 2);
-        else
-            add_plane(ax, r.X, r.Y, r.Z, r.B, r.component, max(abs(plotStyle.clim)));
-        end
+    % Add all planes to overview
+    for k = 1:numel(planeItems)
+        r = planeItems{k}.result;
+        add_plane(ax, r.X, r.Y, r.Z, r.B, r.component, max(abs(plotStyle.clim)));
+    end
+
+    % Add all lines to overview
+    for k = 1:numel(lineItems)
+        r = lineItems{k}.result;
+        plot3(ax, r.X, r.Y, r.Z, 'r-', 'LineWidth', 2);
     end
 
     clim(ax, plotStyle.clim);
@@ -65,31 +79,42 @@ if hasOverview
     if plotStyle.showOrientationReadout
         attach_view_report_callback(ax);
     end
-end
 
-for k = 1:nItems
-    ax = subplot(nRows, nCols, idx, 'Parent', fig);
-    item = allItems{k};
-    r = item.result;
+    % Remaining subplots: line plots only
+    for k = 1:numel(lineItems)
+        ax = subplot(nRows, nCols, idx, 'Parent', fig);
+        item = lineItems{k};
+        r = item.result;
 
-    if isfield(r, 's')
         plot(ax, r.s, r.B, 'LineWidth', 1.5);
         grid(ax, 'on');
         xlabel(ax, 'Distance along line [m]');
         ylabel(ax, append("B_", string(r.component), " [T]"));
-        title(ax, item.caseName + " : line");
-    else
+        title(ax, item.caseName + " : line : " + r.component);
+
+        idx = idx + 1;
+    end
+
+% ------------------------- Case A: no lines -> one subplot per plane -------------------------
+else
+    for k = 1:numel(planeItems)
+        ax = subplot(nRows, nCols, idx, 'Parent', fig);
+        item = planeItems{k};
+        r = item.result;
+
         surf(ax, r.X, r.Y, r.Z, r.B, 'EdgeColor','none');
-        view(ax, 3);
         axis(ax, 'equal');
         box(ax, 'on');
         grid(ax, 'on');
         clim(ax, plotStyle.clim);
         colorbar(ax);
-        title(ax, item.caseName + " : " + r.type + " : " + r.component);
-    end
 
-    idx = idx + 1;
+        set_plane_view(ax, r);
+
+        title(ax, item.caseName + " : " + r.type + " : " + r.component);
+
+        idx = idx + 1;
+    end
 end
 
 end

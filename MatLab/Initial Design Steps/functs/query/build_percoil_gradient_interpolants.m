@@ -31,9 +31,9 @@ for k = 1:nCoils
     % MATLAB gradient returns derivatives in dimension order:
     % (dim1, dim2, dim3) → (y, x, z)
 
-    [dBx_dy, dBx_dx, dBx_dz] = gradient(Bx, dy, dx, dz);
-    [dBy_dy, dBy_dx, dBy_dz] = gradient(By, dy, dx, dz);
-    [dBz_dy, dBz_dx, dBz_dz] = gradient(Bz, dy, dx, dz);
+    [dBx_dx, dBx_dy, dBx_dz] = gradient(Bx, dx, dy, dz);
+    [dBy_dx, dBy_dy, dBy_dz] = gradient(By, dx, dy, dz);
+    [dBz_dx, dBz_dy, dBz_dz] = gradient(Bz, dx, dy, dz);
 
     % Build interpolants
     G.dBx_dx{k} = griddedInterpolant({y,x,z}, dBx_dx, 'linear', 'none');

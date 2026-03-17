@@ -26,7 +26,7 @@ function Q = field_query(load_filename, magnet, target, queries)
 %    and plotting-ready queried results
 
 % ------------------------- Load saved field -------------------------
-[~, ~, field] = load_coilfield_mat(load_filename);
+[coils, ~, field] = load_coilfield_mat(load_filename);
 nCoils = size(field.mag_field_unit, 3);
 if ismatrix(field.mag_field_unit) && size(field.mag_field_unit,1) == 3
     nCoils = 1;
@@ -85,6 +85,8 @@ else
     isOverridden = false;
 end
 
+printCurrents(coils, I_use, isOverridden)
+
 % ------------------------- Package lean outputs -------------------------
 Q = struct();
 
@@ -111,17 +113,7 @@ for k = 1:numel(queries)
 
     switch lower(string(q.type))
         case "fundamental_plane"
-            [X, Y, Z, B] = get_fundamental_plane(field, I_use, q.component, q.plane, q.value);
-        
-            Q.plotting.results{k} = struct();
-            Q.plotting.results{k}.X = X;
-            Q.plotting.results{k}.Y = Y;
-            Q.plotting.results{k}.Z = Z;
-            Q.plotting.results{k}.B = B;
-            Q.plotting.results{k}.type = "fundamental_plane";
-            Q.plotting.results{k}.plane = q.plane;
-            Q.plotting.results{k}.value = q.value;
-            Q.plotting.results{k}.component = q.component;
+            Q.plotting.results{k} = get_fundamental_plane(field, I_use, q);
         case "line"
             Q.plotting.results{k} = query_line(field, F, I_use, q);
 

@@ -1,13 +1,16 @@
-function [X_plane, Y_plane, Z_plane, B_plane] = get_fundamental_plane(field, I, dir, planeName, planeValue)
+function result = get_fundamental_plane(field, I, q)
 % Extracts one of the stored fundamental planes directly from the saved
 % field grid without interpolation.
 %
-% planeName: "xy", "xz", or "yz"
-% planeValue: coordinate of that plane (e.g. z=0 for xy plane)
+% Required fields in q:
+%   q.component   "x", "y", or "z"
+%   q.plane       "xy", "xz", or "yz"
+%   q.value       coordinate of the plane
+%                 (e.g. z=0 for xy, y=0 for xz, x=0 for yz)
 
 mag_field = combine_coil_fields(field.mag_field_unit, I);
 
-switch string(dir)
+switch string(q.component)
     case "x"
         comp = 1;
     case "y"
@@ -15,7 +18,7 @@ switch string(dir)
     case "z"
         comp = 3;
     otherwise
-        error('dir must be "x", "y", or "z".');
+        error('q.component must be "x", "y", or "z".');
 end
 
 Ny = numel(field.y);
@@ -24,9 +27,9 @@ Nz = numel(field.z);
 
 B_full = reshape(mag_field(comp,:), [Ny, Nx, Nz]);
 
-switch lower(string(planeName))
+switch lower(string(q.plane))
     case "xy"
-        [~, iz] = min(abs(field.z - planeValue));
+        [~, iz] = min(abs(field.z - q.value));
 
         X_plane = squeeze(field.X(:,:,iz));
         Y_plane = squeeze(field.Y(:,:,iz));
@@ -34,7 +37,7 @@ switch lower(string(planeName))
         B_plane = squeeze(B_full(:,:,iz));
 
     case "xz"
-        [~, iy] = min(abs(field.y - planeValue));
+        [~, iy] = min(abs(field.y - q.value));
 
         X_plane = squeeze(field.X(iy,:,:));
         Y_plane = squeeze(field.Y(iy,:,:));
@@ -48,7 +51,7 @@ switch lower(string(planeName))
         B_plane = B_plane.';
 
     case "yz"
-        [~, ix] = min(abs(field.x - planeValue));
+        [~, ix] = min(abs(field.x - q.value));
 
         X_plane = squeeze(field.X(:,ix,:));
         Y_plane = squeeze(field.Y(:,ix,:));
@@ -62,6 +65,17 @@ switch lower(string(planeName))
         B_plane = B_plane.';
 
     otherwise
-        error('planeName must be "xy", "xz", or "yz".');
+        error('q.plane must be "xy", "xz", or "yz".');
 end
+
+result = struct();
+result.type = "fundamental_plane";
+result.component = q.component;
+result.plane = q.plane;
+result.value = q.value;
+result.X = X_plane;
+result.Y = Y_plane;
+result.Z = Z_plane;
+result.B = B_plane;
+
 end

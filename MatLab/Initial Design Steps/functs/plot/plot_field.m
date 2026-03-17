@@ -14,8 +14,30 @@ if ~iscell(Q_list)
     Q_list = {Q_list};
 end
 
-if ~isfield(plotStyle, 'clim')
-    plotStyle.clim = [-0.5, 0.5];
+if ~isfield(plotStyle, 'clim') || isempty(plotStyle.clim)
+    Bmax = 0;
+
+    for i = 1:numel(Q_list)
+        results = Q_list{i}.plotting.results;
+
+        for k = 1:numel(results)
+            r = results{k};
+
+            if isfield(r, 'B') && ~isempty(r.B)
+                thisMax = max(abs(r.B), [], "all", "omitnan");
+
+                if ~isempty(thisMax) && isfinite(thisMax)
+                    Bmax = max(Bmax, thisMax);
+                end
+            end
+        end
+    end
+
+    if Bmax <= 0
+        Bmax = 1;
+    end
+
+    plotStyle.clim = [-Bmax, Bmax];
 end
 if ~isfield(plotStyle, 'showCoils')
     plotStyle.showCoils = true;

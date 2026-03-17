@@ -1,10 +1,21 @@
 function result = query_line(field, F, I, q)
+% Queries a field component along a line between start and end points.
+%
+% Required fields in q:
+%   q.start
+%   q.end
+%   q.component
+%
+% Optional:
+%   q.nPoints
+
 if ~isfield(q, 'nPoints')
     q.nPoints = 200;
 end
 
 p0 = q.start(:).';
 p1 = q.end(:).';
+
 t = linspace(0, 1, q.nPoints).';
 
 X = p0(1) + t*(p1(1)-p0(1));
@@ -12,6 +23,7 @@ Y = p0(2) + t*(p1(2)-p0(2));
 Z = p0(3) + t*(p1(3)-p0(3));
 
 B = zeros(size(X));
+
 for k = 1:numel(I)
     switch string(q.component)
         case "x"
@@ -21,10 +33,14 @@ for k = 1:numel(I)
         case "z"
             Bk = F.Bz{k}(Y, X, Z);
         otherwise
-            error('component must be "x", "y", or "z".');
+            error('q.component must be "x", "y", or "z".');
     end
+
     B = B + I(k)*Bk;
 end
+
+inside = query_in_domain(field, X, Y, Z);
+B(~inside) = NaN;
 
 dxyz = [X - X(1), Y - Y(1), Z - Z(1)];
 s = sqrt(sum(dxyz.^2, 2));
