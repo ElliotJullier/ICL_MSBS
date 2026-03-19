@@ -18,7 +18,7 @@ if ~isfield(plotStyle, 'clim') || isempty(plotStyle.clim)
     Bmax = 0;
 
     for i = 1:numel(Q_list)
-        results = Q_list{i}.plotting.results;
+        results = Q_list{i}.plotting;
 
         for k = 1:numel(results)
             r = results{k};

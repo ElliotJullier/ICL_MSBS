@@ -10,7 +10,7 @@ if ~endsWith(load_filename, ".mat")
 end
 
 tmp = load(load_filename, "coils", "geom", "field");
-% coils is a nx1 struct, n the number of ocils which contains the
+% coils is a nx1 struct, n the number of coils which contains the
 % alphashape and relative positions of the coils (as an Tx, Ty, Tz, roll,
 % pitch, yaw) - see coords_global2local for details
 coils = tmp.coils;

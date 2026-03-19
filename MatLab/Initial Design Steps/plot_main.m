@@ -13,7 +13,8 @@ addpath("functs/plot");
 
 % ------------------------- Which queried cases to plot -------------------------
 Q_names = { ...
-    "Q_3" % Must be a string containing the name of the variable
+    "Q_case1_BiotSavartFull", ...
+    "Q_case1_BiotSavartSimple"% Must be a string containing the name of the variable
     % "Q_run12", ...
     % "Q_run13" ...
     % "Q_comsol_case1"
@@ -61,3 +62,4 @@ plotStyle.caseNames = Q_names;
 plotMode = "subplots";   % "single_axes", "subplots", "separate_figures"
 
 plot_field(Q_list, plotMode, plotStyle);
+

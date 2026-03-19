@@ -47,6 +47,9 @@ s = sqrt(sum(dxyz.^2, 2));
 
 result = struct();
 result.type = "line";
+if isfield(q, 'group')
+    result.group = q.group;
+end
 result.component = q.component;
 result.start = q.start;
 result.end = q.end;

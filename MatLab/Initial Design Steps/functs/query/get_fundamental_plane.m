@@ -70,6 +70,9 @@ end
 
 result = struct();
 result.type = "fundamental_plane";
+if isfield(q, 'group')
+    result.group = q.group;
+end
 result.component = q.component;
 result.plane = q.plane;
 result.value = q.value;

@@ -3,7 +3,7 @@ function plot_field_subplots(Q_list, plotStyle)
 allItems = {};
 
 for i = 1:numel(Q_list)
-    results = Q_list{i}.plotting.results;
+    results = Q_list{i}.plotting;
     caseName = plotStyle.caseNames(i);
 
     for k = 1:numel(results)
@@ -60,19 +60,25 @@ if hasLine
         plot_coils_on_axes(ax, coils);
     end
 
+    refComponent = "";
     % Add all planes to overview
     for k = 1:numel(planeItems)
         r = planeItems{k}.result;
-        add_plane(ax, r.X, r.Y, r.Z, r.B, r.component, max(abs(plotStyle.clim)));
+        if refComponent == ""
+            refComponent = r.component;
+        elseif results{k}.component ~= refComponent
+            error("Different B field directions should not be used with plotMode = 'subplots' where a line is queried.");
+        end
+        surf(ax, r.X, r.Y, r.Z, r.B, 'EdgeColor', 'none');
     end
+    set_clrbar(ax, plotStyle.clim, refComponent);
 
     % Add all lines to overview
     for k = 1:numel(lineItems)
         r = lineItems{k}.result;
-        plot3(ax, r.X, r.Y, r.Z, 'r-', 'LineWidth', 2);
+        plot3(ax, r.X, r.Y, r.Z, 'k:', 'LineWidth', 2);
     end
 
-    clim(ax, plotStyle.clim);
     title(ax, "3D overview");
     idx = idx + 1;
 

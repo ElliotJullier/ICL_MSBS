@@ -2,3 +2,19 @@ This folder contains the MatLab scripts supplementary to the COMSOL design steps
 
 Large files, especially .mat are stored in OneDrive (C:\Users\sense\OneDrive - Imperial College London\PhD\21 Design and Procurement\21-2 EM Coils\MatLab\GitHub Large Data Files)
 Solution for automating MatLab script access unfinished so for now a copy paste into the local folder is needed for running pre-calculated MatLab scripts.
+
+As of 2026-03-18, the script is split into 3 main parts:
+- magnetic_field_calc_main
+- query_main
+- plot_main
+
+magnetic_field_calc_main requires the user to define the coils they want to simulate (ie. dimensions, number of turns and position), a working domain must also be defined (ie.the wind tunnel working section bounding section). 
+The output of this is a .mat file that contains 3 structs containing the coils (geometrical placement within global coords), geom (coil specifications like numbers of turns and wire thicknesses) and the magnetic field calculated. 
+The calculation is done using Biot-Savart's law, mutual inductance and non-linear effects are currently ignored and superposition is assumed to hold for several coils
+
+query_main takes as input the magnetic_calc_main *.mat file output, the user is additionally expected to specify the magnet position and strength, the forces/torques expected and whether or not to overwrite the calculated current with something custom (for testing/demonstration purposes).
+The user also inputs the planes/lines to be queried which will give the X, Y, Z, and B fields required for plotting in the plot_main function. 
+The output is stored in a variable in the workspace that consists of a multilayered struct
+
+plot_main is designed to be a helper with plotting multiple potential query_main outputs where they are all saved in the workspace, the user inputs some pre-defined options which decides how to handle multiple planes or planes and line queries.
+

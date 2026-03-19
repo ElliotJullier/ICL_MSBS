@@ -4,7 +4,7 @@ close all;
 addpath("functs"); % Code clarity so helper functions sotred here.
 addpath("functs/magnetic_calc/");
 
-save_filename = "coilfield_run3.mat";
+save_filename = "coilfield_run0b.mat";
 
 % coil_outer_radius = 0.456/2 ;
 % coil_inner_radius = 0.2/2;
@@ -16,13 +16,14 @@ coil_outer_radius = 1.4*0.456/2*sqrt(2) ;
 coil_inner_radius = 0.456/2*sqrt(2);
 N = 300;
 
+coil_h = (pi*wire_outer_radius^2*N)/((coil_outer_radius-coil_inner_radius)*0.7); % Calculated height assuming 70% packing efficiency
 
 coil_vert_pos = 0.456/2;
 coil_streamwise_pos = 0.3;
 
 % rel_pos expects [x, y, z, yaw, pitch, roll]
 % coil0_rel_pos = [0, 0, 0, 0, pi/2, 0];
-coil0_rel_pos = [0.5, 0, 0, 0, pi/2, 0];
+coil0_rel_pos = [0.5, 0, 0, 0, -pi/2, 0];
 % coil1_rel_pos = [ coil_streamwise_pos, 0, coil_vert_pos, 0, 0, 0];
 % coil2_rel_pos = [ coil_streamwise_pos, coil_vert_pos, 0, 0, 0, -pi/2];
 % coil3_rel_pos = [ coil_streamwise_pos, 0, -coil_vert_pos, 0,  pi, 0];
@@ -31,7 +32,7 @@ coil0_rel_pos = [0.5, 0, 0, 0, pi/2, 0];
 % coil6_rel_pos = [ -coil_streamwise_pos, coil_vert_pos, 0, 0, 0, -pi/2];
 % coil7_rel_pos = [-coil_streamwise_pos, 0, -coil_vert_pos, 0,  pi, 0];
 % coil8_rel_pos = [ -coil_streamwise_pos, -coil_vert_pos, 0, 0, 0, pi/2];
-coil9_rel_pos = [-0.5, 0, 0, 0, pi/2, 0];
+% coil9_rel_pos = [-0.5, 0, 0, 0, pi/2, 0];
 
 coil_defs = { ...
     "coil0", coil0_rel_pos; ...
@@ -43,7 +44,7 @@ coil_defs = { ...
     % "coil6", coil6_rel_pos; ...
     % "coil7", coil7_rel_pos; ...
     % "coil8", coil8_rel_pos; ...
-    "coil9", coil9_rel_pos; ...
+    % "coil9", coil9_rel_pos; ...
 };
 
 x = linspace(-0.75, 0.75, 200);
@@ -61,6 +62,7 @@ geom.coil_inner_radius = coil_inner_radius;
 geom.N = N;
 geom.wire_outer_radius = wire_outer_radius;
 geom.wire_inner_radius = wire_inner_radius;
+geom.coil_height = coil_h;
 
 nCoils = size(coil_defs, 1);
 coils = repmat(struct('name', "", 'rel_pos', zeros(1,6), 'shp', []), nCoils, 1);
@@ -76,7 +78,7 @@ for k = 1:nCoils
     local_output_field = coord_global2local(output_coord_list, coils(k).rel_pos);
 
     local_mag_field = Coil_Field( ...
-        geom.coil_outer_radius, geom.coil_inner_radius, geom.N, ...
+        geom.coil_outer_radius, geom.coil_inner_radius, geom.coil_height, geom.N, ...
         geom.wire_outer_radius, geom.wire_inner_radius, local_output_field, ...
         "progress", true, "progressStepPercent", 5, "blockSize", 50000);
 

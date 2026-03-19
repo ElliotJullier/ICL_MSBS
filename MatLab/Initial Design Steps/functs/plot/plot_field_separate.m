@@ -3,7 +3,7 @@ function plot_field_separate(Q_list, plotStyle)
 allItems = {};
 
 for i = 1:numel(Q_list)
-    results = Q_list{i}.plotting.results;
+    results = Q_list{i}.plotting;
     caseName = plotStyle.caseNames(i);
 
     for k = 1:numel(results)
@@ -14,59 +14,102 @@ for i = 1:numel(Q_list)
     end
 end
 
-% 3D overview only if lines exist
-hasLine = false;
+% ------------------------- Split into planes and lines -------------------------
+planeItems = {};
+lineItems  = {};
+
 for k = 1:numel(allItems)
-    if isfield(allItems{k}.result, 's')
-        hasLine = true;
-        break
+    r = allItems{k}.result;
+
+    if isfield(r, 's')
+        lineItems{end+1} = allItems{k}; %#ok<AGROW>
+    else
+        planeItems{end+1} = allItems{k}; %#ok<AGROW>
     end
 end
 
+hasLine = ~isempty(lineItems);
+
+% ------------------------- If lines exist, make one 3D overview figure -------------------------
 if hasLine
     [coils, ~, ~] = load_coilfield_mat(Q_list{1}.input.load_filename);
-    ax = create_plot_axes(coils, plotStyle);
 
-    for k = 1:numel(allItems)
-        r = allItems{k}.result;
-        if isfield(r, 's')
-            plot3(ax, r.X, r.Y, r.Z, 'r-', 'LineWidth', 2);
-        else
-            add_plane(ax, r.X, r.Y, r.Z, r.B, r.component, max(abs(plotStyle.clim)));
-        end
+    figStruct = CoilGeom_setupFig(coils);
+    ax = figStruct.ax;
+
+    if ~plotStyle.showCoils
+        cla(ax);
+        hold(ax, 'on');
+        axis(ax, 'equal');
+        box(ax, 'on');
+        grid(ax, 'on');
+        view(ax, 3);
     end
 
-    clim(ax, plotStyle.clim);
-    title(ax, "3D overview");
+    refComponent = "";
+
+    % Add all planes
+    for k = 1:numel(planeItems)
+        r = planeItems{k}.result;
+
+        if refComponent == ""
+            refComponent = r.component;
+        elseif r.component ~= refComponent
+            error("Different B field directions should not be used with plotMode = 'separate_figures' where a line is queried.");
+        end
+
+        surf(ax, r.X, r.Y, r.Z, r.B, 'EdgeColor','none');
+    end
+
+    % Add all lines
+    for k = 1:numel(lineItems)
+        r = lineItems{k}.result;
+        plot3(ax, r.X, r.Y, r.Z, 'r-', 'LineWidth', 2);
+    end
+
+    % Only apply colourbar if there are planes in the overview
+    if ~isempty(planeItems)
+        set_clrbar(ax, plotStyle.clim, refComponent);
+    end
 
     if plotStyle.showOrientationReadout
         attach_view_report_callback(ax);
     end
 end
 
-for k = 1:numel(allItems)
-    item = allItems{k};
+% ------------------------- One figure per plane -------------------------
+for k = 1:numel(planeItems)
+    item = planeItems{k};
     r = item.result;
 
     fig = figure;
     ax = axes('Parent', fig);
 
-    if isfield(r, 's')
-        plot(ax, r.s, r.B, 'LineWidth', 1.5);
-        grid(ax, 'on');
-        xlabel(ax, 'Distance along line [m]');
-        ylabel(ax, append("B_", string(r.component), " [T]"));
-        title(ax, item.caseName + " : line");
-    else
-        surf(ax, r.X, r.Y, r.Z, r.B, 'EdgeColor','none');
-        axis(ax, 'equal');
-        box(ax, 'on');
-        grid(ax, 'on');
-        view(ax, 3);
-        clim(ax, plotStyle.clim);
-        colorbar(ax);
-        title(ax, item.caseName + " : " + r.type + " : " + r.component);
-    end
+    surf(ax, r.X, r.Y, r.Z, r.B, 'EdgeColor','none');
+    axis(ax, 'equal');
+    box(ax, 'on');
+    grid(ax, 'on');
+
+    set_clrbar(ax, plotStyle.clim, r.component);
+    set_plane_view(ax, r);
+
+    % No title
+end
+
+% ------------------------- One figure per line -------------------------
+for k = 1:numel(lineItems)
+    item = lineItems{k};
+    r = item.result;
+
+    fig = figure;
+    ax = axes('Parent', fig);
+
+    plot(ax, r.s, r.B, 'LineWidth', 1.5);
+    grid(ax, 'on');
+    xlabel(ax, 'Distance along line [m]');
+    ylabel(ax, append("B_", string(r.component), " [T]"));
+
+    % No title
 end
 
 end

@@ -104,8 +104,7 @@ Q.intermediate.currents.isOverridden = isOverridden;
 Q.intermediate.magnet = struct();
 Q.intermediate.magnet.m_global = m_global;
 
-Q.plotting = struct();
-Q.plotting.results = cell(size(queries));
+Q.plotting = cell(size(queries));
 
 % ------------------------- Evaluate requested queries -------------------------
 for k = 1:numel(queries)
@@ -113,12 +112,12 @@ for k = 1:numel(queries)
 
     switch lower(string(q.type))
         case "fundamental_plane"
-            Q.plotting.results{k} = get_fundamental_plane(field, I_use, q);
+            Q.plotting{k} = get_fundamental_plane(field, I_use, q);
         case "line"
-            Q.plotting.results{k} = query_line(field, F, I_use, q);
+            Q.plotting{k} = query_line(field, F, I_use, q);
 
         case "custom_plane"
-            Q.plotting.results{k} = query_custom_plane(field, F, I_use, q);
+            Q.plotting{k} = query_custom_plane(field, F, I_use, q);
 
         otherwise
             error("Unknown query type: " + string(q.type));

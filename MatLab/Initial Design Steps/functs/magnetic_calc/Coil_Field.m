@@ -1,4 +1,4 @@
-function mag_field = Coil_Field(R, r, N, wire_R, wire_r, outputField, varargin)
+function mag_field = Coil_Field(R, r, h, N, wire_R, wire_r, outputField, varargin)
 % Simple volume integration of the Biot-Savart law, for constant current
 % (density) the field shape is dependant only only coil geometry
 %
@@ -34,8 +34,6 @@ blkN    = round(p.Results.blockSize);
 
 t_total = tic;
 
-% ------------------------- Coil height -------------------------
-h = (pi*wire_R^2*N)/((R-r)*0.7);
 
 % ------------------------- Discretising coil -------------------------
 grid_discretisation_level = 10;
@@ -125,8 +123,7 @@ for j = 1:Nelems
 end
 
 % ------------------------- Scaling -------------------------
-wire_CS_ratio = 1 - (wire_r/wire_R).^2;
-mag_field = N*1e-7*wire_CS_ratio*mag_field;
+mag_field = 1.2566*10^-6/(4*pi)*N/(h*(R-r))*mag_field;
 
 if doProg
     fprintf("[%s] Coil_Field finished in %.1f s\n", datestr(now,"HH:MM:SS"), toc(t_total));

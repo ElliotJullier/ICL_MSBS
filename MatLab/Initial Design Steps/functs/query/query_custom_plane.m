@@ -106,6 +106,9 @@ B(~inside) = NaN;
 % ------------------------- Package result -------------------------
 result = struct();
 result.type = "custom_plane";
+if isfield(q, 'group')
+    result.group = q.group;
+end
 result.component = q.component;
 result.point = q.point;
 result.normal = q.normal;

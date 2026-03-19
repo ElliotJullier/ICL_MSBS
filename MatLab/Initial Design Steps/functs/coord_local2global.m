@@ -39,5 +39,5 @@ for i = 1:size(input_grid, 2) % How many points inputting
     % Rotation+ Transformation matrix is 4x4, whereas the input is 3x1, we
     % add a 1 at the botton of the input to allow the translations to take
     % effect
-    output_grid(:, i) = rotation_matrix\(input_grid(:, i))-translation_matrix; 
+    output_grid(:, i) = rotation_matrix\(input_grid(:, i))+translation_matrix; 
 end
