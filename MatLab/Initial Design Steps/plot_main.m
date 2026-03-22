@@ -59,7 +59,5 @@ plotStyle.showOrientationReadout = true;
 % Optional display names for legend/titles
 plotStyle.caseNames = Q_names;
 
-plotMode = "subplots";   % "single_axes", "subplots", "separate_figures"
-
-plot_field(Q_list, plotMode, plotStyle);
+plot_field(Q_list, plotStyle);
 

@@ -1,8 +1,6 @@
 function attach_view_report_callback(ax)
-
 fig = ancestor(ax, 'figure');
 fig.WindowButtonUpFcn = @(~,~) report_view(ax);
-
 end
 
 function report_view(ax)

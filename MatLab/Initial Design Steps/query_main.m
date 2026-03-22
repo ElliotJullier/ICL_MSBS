@@ -18,7 +18,7 @@ target.rows_to_control = []; % Leave empty for all control, 1 - Fx, 2 - Fy, 3 - 
 target.override_currents = [50]; % Optional, an array of currents for the coils to produce, will overwrite calculated currents required as defined by the previous variables
 
 queries = {
-    % struct("type","fundamental_plane","plane","xy","value",0,"component","x")
+    struct("type","fundamental_plane","plane","xy","value",0,"component","x", "group", 1)
     struct("type","fundamental_plane","plane","xz","value",0,"component","x", "group", 1)
     % struct("type","fundamental_plane","plane","yz","value",-0.5,"component","x")
     % struct("type","fundamental_plane","plane","yz","value",0.5,"component","x")

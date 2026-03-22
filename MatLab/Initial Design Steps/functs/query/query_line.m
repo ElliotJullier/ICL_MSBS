@@ -1,14 +1,4 @@
 function result = query_line(field, F, I, q)
-% Queries a field component along a line between start and end points.
-%
-% Required fields in q:
-%   q.start
-%   q.end
-%   q.component
-%
-% Optional:
-%   q.nPoints
-
 if ~isfield(q, 'nPoints')
     q.nPoints = 200;
 end
@@ -35,7 +25,6 @@ for k = 1:numel(I)
         otherwise
             error('q.component must be "x", "y", or "z".');
     end
-
     B = B + I(k)*Bk;
 end
 
@@ -47,9 +36,6 @@ s = sqrt(sum(dxyz.^2, 2));
 
 result = struct();
 result.type = "line";
-if isfield(q, 'group')
-    result.group = q.group;
-end
 result.component = q.component;
 result.start = q.start;
 result.end = q.end;
@@ -58,4 +44,17 @@ result.Y = Y;
 result.Z = Z;
 result.s = s;
 result.B = B;
+result.inside = inside;
+
+if isfield(q, 'group')
+    result.group = q.group;
+end
+if isfield(q, 'inOverview')
+    result.inOverview = q.inOverview;
+else
+    result.inOverview = false;
+end
+if isfield(q, 'label')
+    result.label = q.label;
+end
 end
