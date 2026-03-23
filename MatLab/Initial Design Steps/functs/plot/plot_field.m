@@ -1,4 +1,5 @@
 function plot_field(Q_list, plotStyle)
+
 if ~iscell(Q_list)
     Q_list = {Q_list};
 end
@@ -12,20 +13,14 @@ end
 if ~isfield(plotStyle, 'showCoilsInPlaneFigures')
     plotStyle.showCoilsInPlaneFigures = false;
 end
-if ~isfield(plotStyle, 'caseNames')
-    plotStyle.caseNames = strings(1, numel(Q_list));
-    for k = 1:numel(Q_list)
-        plotStyle.caseNames(k) = "Case " + k;
-    end
-end
 
 if ~isfield(plotStyle, 'clim') || isempty(plotStyle.clim)
     Bmax = 0;
     for i = 1:numel(Q_list)
-        results = Q_list{i}.plotting.results;
-        for k = 1:numel(results)
-            r = results{k};
-            if isfield(r, 'B') && ~isempty(r.B) && ~isfield(r, 's')
+        reqs = Q_list{i}.plotting;
+        for k = 1:numel(reqs)
+            r = reqs{k};
+            if isfield(r,'B') && ~isempty(r.B) && ~isfield(r,'s')
                 thisMax = max(abs(r.B), [], "all", "omitnan");
                 if ~isempty(thisMax) && isfinite(thisMax)
                     Bmax = max(Bmax, thisMax);
@@ -39,25 +34,31 @@ if ~isfield(plotStyle, 'clim') || isempty(plotStyle.clim)
     plotStyle.clim = [-Bmax, Bmax];
 end
 
-plot_requests = flatten_plot_requests(Q_list, plotStyle);
-
-doOverview = any(cellfun(@(r) isfield(r,'inOverview') && logical(r.inOverview), plot_requests));
-if doOverview
-    plot_overview(plot_requests, Q_list, plotStyle);
-end
+plot_requests = flatten_plot_requests(Q_list);
 
 plane_requests = {};
 line_requests  = {};
 
 for k = 1:numel(plot_requests)
     r = plot_requests{k};
-    if contains(lower(char(string(r.type))), 'plane')
+    t = lower(char(string(r.type)));
+
+    if contains(t, 'plane')
         plane_requests{end+1} = r; %#ok<AGROW>
-    elseif contains(lower(char(string(r.type))), 'line')
+    elseif contains(t, 'line')
         line_requests{end+1} = r; %#ok<AGROW>
     else
         error("Unknown plotting request type: " + string(r.type));
     end
+end
+
+hasAnyLine = ~isempty(line_requests);
+hasMarkedOverview = any(cellfun(@(r) isfield(r,'inOverview') && logical(r.inOverview), plot_requests));
+
+doOverview = hasAnyLine || hasMarkedOverview;
+
+if doOverview
+    plot_overview(plane_requests, line_requests, Q_list, plotStyle);
 end
 
 plane_groups = build_plot_groups(plane_requests);
@@ -66,7 +67,9 @@ line_groups  = build_plot_groups(line_requests);
 for k = 1:numel(plane_groups)
     plot_plane_group(plane_groups(k), Q_list, plotStyle);
 end
+
 for k = 1:numel(line_groups)
     plot_line_group(line_groups(k), plotStyle);
 end
+
 end

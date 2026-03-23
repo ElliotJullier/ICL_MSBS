@@ -54,7 +54,7 @@ if isfield(q, 'inOverview')
 else
     result.inOverview = false;
 end
-if isfield(q, 'label')
-    result.label = q.label;
+if isfield(q, 'legendName')
+    result.legendName = q.legendName;
 end
 end

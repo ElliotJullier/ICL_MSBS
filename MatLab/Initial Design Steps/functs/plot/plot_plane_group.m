@@ -1,4 +1,5 @@
 function plot_plane_group(groupStruct, Q_list, plotStyle)
+
 reqs = groupStruct.requests;
 if isempty(reqs)
     return
@@ -15,22 +16,10 @@ end
 
 singlePlane = numel(reqs) == 1;
 
-if singlePlane && ~plotStyle.showCoilsInPlaneFigures
-    fig = figure;
-    ax = axes('Parent', fig);
-    hold(ax, 'on');
-    surf(ax, reqs{1}.X, reqs{1}.Y, reqs{1}.Z, reqs{1}.B, 'EdgeColor','none');
-    axis(ax, 'equal');
-    box(ax, 'on');
-    grid(ax, 'on');
-    set_clrbar(ax, plotStyle.clim, refComponent);
-    set_plane_view(ax, reqs{1});
-    return
-end
-
 if plotStyle.showCoilsInPlaneFigures
     [coils, ~, ~] = load_coilfield_mat(Q_list{1}.input.load_filename);
-    ax = create_plot_axes(coils, plotStyle);
+    figStruct = CoilGeom_setupFig(coils);
+    ax = figStruct.ax;
 else
     fig = figure;
     ax = axes('Parent', fig);
@@ -38,7 +27,6 @@ else
     axis(ax, 'equal');
     box(ax, 'on');
     grid(ax, 'on');
-    view(ax, 3);
 end
 
 for k = 1:numel(reqs)
@@ -53,7 +41,12 @@ else
     view(ax, 3);
 end
 
+xlabel(ax, '$x$ [m]', 'Interpreter', 'latex');
+ylabel(ax, '$y$ [m]', 'Interpreter', 'latex');
+zlabel(ax, '$z$ [m]', 'Interpreter', 'latex');
+
 if plotStyle.showOrientationReadout
     attach_view_report_callback(ax);
 end
+
 end

@@ -56,8 +56,6 @@ end
 plotStyle.showCoils = true;
 plotStyle.showOrientationReadout = true;
 
-% Optional display names for legend/titles
-plotStyle.caseNames = Q_names;
 
 plot_field(Q_list, plotStyle);
 

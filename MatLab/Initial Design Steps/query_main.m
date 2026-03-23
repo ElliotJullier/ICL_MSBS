@@ -18,12 +18,12 @@ target.rows_to_control = []; % Leave empty for all control, 1 - Fx, 2 - Fy, 3 - 
 target.override_currents = [50]; % Optional, an array of currents for the coils to produce, will overwrite calculated currents required as defined by the previous variables
 
 queries = {
-    struct("type","fundamental_plane","plane","xy","value",0,"component","x", "group", 1)
-    struct("type","fundamental_plane","plane","xz","value",0,"component","x", "group", 1)
+    struct("type","fundamental_plane","plane","xy","value",0,"component","x", "group", 1, "inOverview", true)
+    struct("type","fundamental_plane","plane","xz","value",0,"component","x", "group", 2, "inOverview", true)
     % struct("type","fundamental_plane","plane","yz","value",-0.5,"component","x")
     % struct("type","fundamental_plane","plane","yz","value",0.5,"component","x")
     % struct("type", "custom_plane", "point", [0 0 0], "normal", [0.2 1 1], "component", "x", "resolution", [150 150]) % Equivalent to fundamental xy plane, resolution is option and can be a scalar
-    struct("type","line","start",[0.5 0 0],"end",[-0.5 0 0],"component","x","nPoints",200, "group", 2) % nPoints and group are optional
+    struct("type","line","start",[0.5 0 0],"end",[-0.5 0 0],"component","x","nPoints",200, "group", 2, "legendName", "Full Biot-Savart") % nPoints and group are optional
 };
 
 Q_case1_BiotSavartFull = field_query("coilfield_run0b.mat", magnet, target, queries);
@@ -38,6 +38,7 @@ Q_case1_BiotSavartSimple.plotting{1} = struct();
 Q_case1_BiotSavartSimple.plotting{1}.type = "line";
 Q_case1_BiotSavartSimple.plotting{1}.component = "x";
 Q_case1_BiotSavartSimple.plotting{1}.group = 2;
+Q_case1_BiotSavartSimple.plotting{1}.legendName = "On-axis Biot-Savart";
 %  --- START AND END POINTS ASSUMED IN LINE WITH COIL AXIS ---
 Q_case1_BiotSavartSimple.plotting{1}.start = [0.5, 0, 0];
 Q_case1_BiotSavartSimple.plotting{1}.end = [-0.5, 0, 0];

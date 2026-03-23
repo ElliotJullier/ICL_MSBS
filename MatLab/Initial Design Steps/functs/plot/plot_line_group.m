@@ -12,12 +12,26 @@ components = strings(1, numel(reqs));
 
 for k = 1:numel(reqs)
     r = reqs{k};
-    plot(ax, r.s, r.B, 'LineWidth', 1.5);
+
+    if isfield(r, 'legendName') && ~isempty(r.legendName)
+        plot(ax, r.s, r.B, ...
+            'LineWidth', 1.5, ...
+            'DisplayName', char(string(r.legendName)));
+    else
+        plot(ax, r.s, r.B, 'LineWidth', 1.5);
+    end
+
     components(k) = string(r.component);
 end
 
+hasLegend = any(cellfun(@(rr) isfield(rr,'legendName') && ~isempty(rr.legendName), reqs));
+if hasLegend
+    lgd = legend(ax, 'show', 'Location', 'best');
+    lgd.Interpreter = 'latex';
+end
+
 grid(ax, 'on');
-xlabel(ax, 'Distance along line [m]');
+xlabel(ax, 'Distance along line [m]', 'Interpreter','latex');
 
 ucomp = unique(components);
 if numel(ucomp) == 1

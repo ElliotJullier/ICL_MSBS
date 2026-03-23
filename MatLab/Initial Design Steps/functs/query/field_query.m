@@ -37,7 +37,7 @@ F = build_percoil_interpolants(field);
 G = build_percoil_gradient_interpolants(field);
 
 % ------------------------- Magnet definition -------------------------
-mu_0 = 1.2256e-6; % N/A^2
+mu_0 = 1.2566e-6; % N/A^2
 
 m_local = magnet.remanence ./ mu_0 .* ...
           magnet.volume .* ...
