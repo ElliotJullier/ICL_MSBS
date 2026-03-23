@@ -1,6 +1,5 @@
-function coil_shape = extract_coilShape(R, r, N, wire_R, rel_pos)
+function coil_shape = extract_coilShape(R, r, h, rel_pos)
 
-h = (pi*wire_R^2*N)/((R-r)*0.7); % area matching including a 70% packing efficiency factor
 % Maximum packing density of spheres is 74% and of circles is 91%, 3D
 % geometry of coils + space for structural supports mean 70% is
 % conservative estimate
