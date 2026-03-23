@@ -96,6 +96,14 @@ Q.input.magnet = magnet;
 Q.input.target = target;
 Q.input.queries = queries;
 
+
+Q.meta = struct();
+Q.meta.source_type = "biotsavart";
+Q.meta.case_name = "";
+Q.meta.created_on = string(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss'));
+Q.meta.grid_vectors = struct('x', field.x, 'y', field.y, 'z', field.z);
+Q.meta.notes = "Derived grid arrays are rebuilt on load from x, y, z.";
+
 Q.intermediate = struct();
 Q.intermediate.currents = struct();
 Q.intermediate.currents.current = I_use;

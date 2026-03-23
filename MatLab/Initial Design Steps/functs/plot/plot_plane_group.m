@@ -10,13 +10,16 @@ for k = 1:numel(reqs)
     if refComponent == ""
         refComponent = string(reqs{k}.component);
     elseif string(reqs{k}.component) ~= refComponent
-        error("Grouped planes must share the same field component.");
+        error("Grouped planes must share the same field component. Split them into different groups.");
     end
 end
 
 singlePlane = numel(reqs) == 1;
 
 if plotStyle.showCoilsInPlaneFigures
+    if ~isfield(Q_list{1}, 'input') || ~isfield(Q_list{1}.input, 'load_filename')
+        error("Plane coil overlay requires Q.input.load_filename to be available.");
+    end
     [coils, ~, ~] = load_coilfield_mat(Q_list{1}.input.load_filename);
     figStruct = CoilGeom_setupFig(coils);
     ax = figStruct.ax;

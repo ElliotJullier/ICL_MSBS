@@ -30,6 +30,8 @@ else
     view(ax, 3);
 end
 
+hold(ax, 'on');
+
 refComponent = "";
 
 % Plot only explicitly flagged overview planes
@@ -42,34 +44,12 @@ for k = 1:numel(overview_planes)
         error("Overview planes must share the same field component.");
     end
 
-    surf(ax, r.X, r.Y, r.Z, r.B, 'EdgeColor','none');
+    surf(ax, r.X, r.Y, r.Z, r.B, 'EdgeColor', 'none');
 end
 
-% Plot all lines
-for k = 1:numel(overview_lines)
-    r = overview_lines{k};
-    % Main sampled path
-    plot3(ax, r.X, r.Y, r.Z, 'k:', 'LineWidth', 1.5);
-    
-    % Start point marker
-    plot3(ax, r.X(1), r.Y(1), r.Z(1), 'ko', ...
-        'MarkerFaceColor', 'k', ...
-        'MarkerSize', 6);
-    
-    % Arrowhead at end
-    if numel(r.X) >= 2
-        dx = r.X(end) - r.X(end-1);
-        dy = r.Y(end) - r.Y(end-1);
-        dz = r.Z(end) - r.Z(end-1);
-    
-        quiver3(ax, ...
-            r.X(end-1), r.Y(end-1), r.Z(end-1), ...
-            dx, dy, dz, ...
-            0, ... % no autoscaling
-            'Color', 'k', ...
-            'LineWidth', 1.5, ...
-            'MaxHeadSize', 2);
-    end
+% Attach camera-aware overview overlay
+if ~isempty(overview_lines)
+    attach_overview_line_overlay_callback(ax, overview_lines, 3e-3);
 end
 
 if refComponent ~= ""

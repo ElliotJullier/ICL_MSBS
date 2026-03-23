@@ -20,6 +20,7 @@ function q = queries()
 %           Optional.
 %           Numeric or string group tag.
 %           Requests with the same group are plotted together by type.
+           For grouped planes, all requests must share the same component.
 %
 %       q.inOverview
 %           Optional logical.

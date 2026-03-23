@@ -27,37 +27,15 @@ queries = {
 };
 
 Q_case1_BiotSavartFull = field_query("coilfield_run0b.mat", magnet, target, queries);
-% save("Q_case1_BiotSavartFull.mat", "Q_1");
+save("Q_case1_BiotSavartFull.mat", "Q_case1_BiotSavartFull");
 
-% ------ In-axis Biot-Savart ------
+% ------ Simple on-axis Biot-Savart helper ------
 
-% Line defined same as one in queries for now
-Q_case1_BiotSavartSimple = struct();
-Q_case1_BiotSavartSimple.plotting = cell(1);
-Q_case1_BiotSavartSimple.plotting{1} = struct();
-Q_case1_BiotSavartSimple.plotting{1}.type = "line";
-Q_case1_BiotSavartSimple.plotting{1}.component = "x";
-Q_case1_BiotSavartSimple.plotting{1}.group = 2;
-Q_case1_BiotSavartSimple.plotting{1}.legendName = "On-axis Biot-Savart";
-%  --- START AND END POINTS ASSUMED IN LINE WITH COIL AXIS ---
-Q_case1_BiotSavartSimple.plotting{1}.start = [0.5, 0, 0];
-Q_case1_BiotSavartSimple.plotting{1}.end = [-0.5, 0, 0];
-n = 200;
-Q_case1_BiotSavartSimple.plotting{1}.X = linspace(Q_case1_BiotSavartSimple.plotting{1}.start(1), Q_case1_BiotSavartSimple.plotting{1}.end(1), n)';
-Q_case1_BiotSavartSimple.plotting{1}.Y = linspace(Q_case1_BiotSavartSimple.plotting{1}.start(2), Q_case1_BiotSavartSimple.plotting{1}.end(2), n)';
-Q_case1_BiotSavartSimple.plotting{1}.Z = linspace(Q_case1_BiotSavartSimple.plotting{1}.start(3), Q_case1_BiotSavartSimple.plotting{1}.end(3), n)';
+Q_case1_BiotSavartSimple = simple_biotsavart_query( ...
+    "coilfield_run0b.mat", ...
+    target.override_currents, ...
+    {struct("type","line","start",[0.5 0 0],"end",[-0.5 0 0],"component","x","nPoints",200, "group", 2, "legendName", "On-axis Biot-Savart")}, ...
+    "caseName", "Q_case1_BiotSavartSimple", ...
+    "sourceName", "analytical_simple_biotsavart");
 
-Q_case1_BiotSavartSimple.plotting{1}.s = vecnorm([Q_case1_BiotSavartSimple.plotting{1}.X, Q_case1_BiotSavartSimple.plotting{1}.Y, Q_case1_BiotSavartSimple.plotting{1}.Z] - [Q_case1_BiotSavartSimple.plotting{1}.X(1), Q_case1_BiotSavartSimple.plotting{1}.Y(1), Q_case1_BiotSavartSimple.plotting{1}.Z(1)], 2, 2);
-
-[~, geom, ~] = load_coilfield_mat("coilfield_run0b.mat");
-averageR = (geom.coil_outer_radius + geom.coil_inner_radius)/2;
-
-coil_offset = 0; % Can be used to move coil along the defined line (eg. starting at the other end for a pair of coils)
-
-mu_0 = 1.2566*10^-6; 
-Q_case1_BiotSavartSimple.plotting{1}.B = geom.N*mu_0*target.override_currents(1)*averageR^2./(2*((Q_case1_BiotSavartSimple.plotting{1}.s-coil_offset).^2 + averageR^2).^(3/2));
 save("Q_case1_BiotSavartSimple.mat", "Q_case1_BiotSavartSimple");
-
-
-
-

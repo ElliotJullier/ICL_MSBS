@@ -21,14 +21,11 @@ coils = tmp.coils;
 % non-hollow wires)
 geom  = tmp.geom;
 
-% geom is a 1x1 struct with 9 fields: x, y and z which define the
-% rectangular prism domain of magnetic field calculation, output_dims which
-% contains the dimension in each direction. X, Y, Z which is the meshgrid
-% output of x, y, z. output_coord_list is an unpacked X, Y, Z such that it
-% is a list of coordinates (3 rows, k columns) where k is
-% len(x)*len(y)*len(z). Lastly mag_field_unit is of the same dimensions of
-% output_coord_list but with a 3rd direction where each plane represents
-% the effects of each coil
+% field is a 1x1 struct containing the rectangular-prism grid vectors
+% x, y, z and the sampled magnetic field data mag_field_unit. Derived grid
+% layout fields (output_dims, X, Y, Z, output_coord_list) are rebuilt on
+% load so the saved .mat can stay light.
 field = tmp.field;
+field = rebuild_field_layout(field);
 
 end
