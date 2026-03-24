@@ -17,8 +17,8 @@ for k = 1:nCoils
     By = reshape(Bk(2,:), [Ny, Nx, Nz]);
     Bz = reshape(Bk(3,:), [Ny, Nx, Nz]);
 
-    F.Bx{k} = griddedInterpolant({y, x, z}, Bx, 'linear', 'none');
-    F.By{k} = griddedInterpolant({y, x, z}, By, 'linear', 'none');
-    F.Bz{k} = griddedInterpolant({y, x, z}, Bz, 'linear', 'none');
+    F.Bx{k} = griddedInterpolant({y, x, z}, Bx, 'cubic', 'none');
+    F.By{k} = griddedInterpolant({y, x, z}, By, 'cubic', 'none');
+    F.Bz{k} = griddedInterpolant({y, x, z}, Bz, 'cubic', 'none');
 end
 end

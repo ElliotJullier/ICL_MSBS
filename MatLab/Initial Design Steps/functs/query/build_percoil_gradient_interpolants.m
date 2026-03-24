@@ -36,17 +36,17 @@ for k = 1:nCoils
     [dBz_dx, dBz_dy, dBz_dz] = gradient(Bz, dx, dy, dz);
 
     % Build interpolants
-    G.dBx_dx{k} = griddedInterpolant({y,x,z}, dBx_dx, 'linear', 'none');
-    G.dBx_dy{k} = griddedInterpolant({y,x,z}, dBx_dy, 'linear', 'none');
-    G.dBx_dz{k} = griddedInterpolant({y,x,z}, dBx_dz, 'linear', 'none');
+    G.dBx_dx{k} = griddedInterpolant({y,x,z}, dBx_dx, 'cubic', 'none');
+    G.dBx_dy{k} = griddedInterpolant({y,x,z}, dBx_dy, 'cubic', 'none');
+    G.dBx_dz{k} = griddedInterpolant({y,x,z}, dBx_dz, 'cubic', 'none');
 
-    G.dBy_dx{k} = griddedInterpolant({y,x,z}, dBy_dx, 'linear', 'none');
-    G.dBy_dy{k} = griddedInterpolant({y,x,z}, dBy_dy, 'linear', 'none');
-    G.dBy_dz{k} = griddedInterpolant({y,x,z}, dBy_dz, 'linear', 'none');
+    G.dBy_dx{k} = griddedInterpolant({y,x,z}, dBy_dx, 'cubic', 'none');
+    G.dBy_dy{k} = griddedInterpolant({y,x,z}, dBy_dy, 'cubic', 'none');
+    G.dBy_dz{k} = griddedInterpolant({y,x,z}, dBy_dz, 'cubic', 'none');
 
-    G.dBz_dx{k} = griddedInterpolant({y,x,z}, dBz_dx, 'linear', 'none');
-    G.dBz_dy{k} = griddedInterpolant({y,x,z}, dBz_dy, 'linear', 'none');
-    G.dBz_dz{k} = griddedInterpolant({y,x,z}, dBz_dz, 'linear', 'none');
+    G.dBz_dx{k} = griddedInterpolant({y,x,z}, dBz_dx, 'cubic', 'none');
+    G.dBz_dy{k} = griddedInterpolant({y,x,z}, dBz_dy, 'cubic', 'none');
+    G.dBz_dz{k} = griddedInterpolant({y,x,z}, dBz_dz, 'cubic', 'none');
 
 end
 

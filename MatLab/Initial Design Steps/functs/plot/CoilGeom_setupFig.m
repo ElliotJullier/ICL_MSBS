@@ -53,10 +53,10 @@ xlabel(h.ax, "$x$ [m]", 'Interpreter', 'latex');
 ylabel(h.ax, "$y$ [m]", 'Interpreter', 'latex');
 zlabel(h.ax, "$z$ [m]", 'Interpreter', 'latex');
 
-if exist('plotcube', 'file') == 2
-    axes(h.ax);
-    plotcube([1.52 0.46 0.46], [-1.52/2, -0.46/2, -0.46/2], 0, [0 0 0]);
-end
+% if exist('plotcube', 'file') == 2
+%     axes(h.ax);
+%     plotcube([1.52 0.46 0.46], [-1.52/2, -0.46/2, -0.46/2], 0, [0 0 0]);
+% end
 
 camlight(h.ax, 'headlight');
 lighting(h.ax, 'gouraud');
