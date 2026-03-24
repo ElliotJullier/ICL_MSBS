@@ -12,6 +12,12 @@ for i = 1:numel(Q_list)
             r.inOverview = false;
         end
 
+        if isfield(Q_list{i}, 'input') && isfield(Q_list{i}.input, 'load_filename')
+            r.source_load_filename = Q_list{i}.input.load_filename;
+        else
+            r.source_load_filename = "";
+        end
+
         plot_requests{end+1} = r; %#ok<AGROW>
     end
 end

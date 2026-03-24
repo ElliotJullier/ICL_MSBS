@@ -53,8 +53,8 @@ for iq = 1:numel(queries)
     if lower(string(q.type)) ~= "line"
         error("simple_biotsavart_query currently supports only line queries.");
     end
-    if string(q.component) ~= "x"
-        error("simple_biotsavart_query currently supports only the on-axis component, q.component = 'x'.");
+    if ~any(string(q.component) == ["x","y","z"])
+        error("simple_biotsavart_query supports q.component = 'x', 'y', or 'z'.");
     end
 
     if ~isfield(q, 'nPoints')
@@ -86,7 +86,14 @@ for iq = 1:numel(queries)
         N = numel(B_local_z);
         B_local = [zeros(1,N); zeros(1,N); B_local_z.'];
         B_global = coord_local2global(B_local, [0, 0, 0, coils(k).rel_pos(4:6)]);
-        B = B + B_global(1,:).';
+        switch string(q.component)
+            case "x"
+                B = B + B_global(1,:).';
+            case "y"
+                B = B + B_global(2,:).';
+            case "z"
+                B = B + B_global(3,:).';
+        end
     end
 
     dxyz = [X - X(1), Y - Y(1), Z - Z(1)];

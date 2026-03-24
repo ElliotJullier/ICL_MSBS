@@ -25,8 +25,10 @@ function s = plotStyle()
 %
 %       s.showCoilsInPlaneFigures
 %           logical scalar.
-%           true  -> grouped plane figures also show coils
-%           false -> plane figures contain only the plane surfaces
+%           true  -> single-plane figures show coil/plane intersection
+%                    overlays, and multi-plane figures show transparent
+%                    3D coil bodies with black edges
+%           false -> plane figures contain only the plane field surfaces
 %
 %   Typical usage:
 %       ps = plotStyle();
@@ -41,5 +43,5 @@ s = struct();
 s.clim = [];
 s.showCoils = true;
 s.showOrientationReadout = true;
-s.showCoilsInPlaneFigures = false;
+s.showCoilsInPlaneFigures = true;
 end

@@ -7,7 +7,7 @@ if max(abs(clrmap_range), [], "all")>1
 end
 
 num_colours = size(clrmap_range, 1);
-n = 100;
+n = 10;
 
 clrmap = zeros(n*(num_colours-1)+1, 3);
 

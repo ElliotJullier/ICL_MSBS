@@ -11,7 +11,7 @@ if ~isfield(plotStyle, 'showOrientationReadout')
     plotStyle.showOrientationReadout = true;
 end
 if ~isfield(plotStyle, 'showCoilsInPlaneFigures')
-    plotStyle.showCoilsInPlaneFigures = false;
+    plotStyle.showCoilsInPlaneFigures = true;
 end
 
 if ~isfield(plotStyle, 'clim') || isempty(plotStyle.clim)

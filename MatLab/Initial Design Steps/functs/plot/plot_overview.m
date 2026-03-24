@@ -18,6 +18,11 @@ end
 % Create figure/axes directly here
 if plotStyle.showCoils
     [coils, ~, ~] = load_coilfield_mat(Q_list{1}.input.load_filename);
+    disp("Loaded coil names for overview:")
+    disp({coils.name}.')
+    for k = 1:numel(coils)
+        fprintf('coil %d: shp empty = %d\n', k, isempty(coils(k).shp));
+    end
     figStruct = CoilGeom_setupFig(coils);
     ax = figStruct.ax;
 else

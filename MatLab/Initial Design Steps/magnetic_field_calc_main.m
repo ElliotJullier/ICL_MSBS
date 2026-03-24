@@ -4,7 +4,7 @@ close all;
 addpath("functs"); % Code clarity so helper functions sotred here.
 addpath("functs/magnetic_calc/");
 
-save_filename = "coilfield_run1.mat";
+save_filename = "coilfield_run2.mat";
 
 % coil_outer_radius = 0.456/2 ;
 % coil_inner_radius = 0.2/2;
@@ -27,7 +27,8 @@ coil_streamwise_pos = 0.3;
 
 % rel_pos expects [x, y, z, yaw, pitch, roll]
 % coil0_rel_pos = [0, 0, 0, 0, pi/2, 0];
-coil0_rel_pos = [0, 0, 90/1000, 0, 0, 0];
+% coil0_rel_pos = [0, 0, 90/1000, 0, 0, 0];
+coil0_rel_pos = [0 0 0 0 0 0];
 % coil1_rel_pos = [ coil_streamwise_pos, 0, coil_vert_pos, 0, 0, 0];
 % coil2_rel_pos = [ coil_streamwise_pos, coil_vert_pos, 0, 0, 0, -pi/2];
 % coil3_rel_pos = [ coil_streamwise_pos, 0, -coil_vert_pos, 0,  pi, 0];
@@ -48,7 +49,7 @@ coil_defs = { ...
     % "coil6", coil6_rel_pos; ...
     % "coil7", coil7_rel_pos; ...
     % "coil8", coil8_rel_pos; ...
-    "coil9", coil9_rel_pos; ...
+    % "coil9", coil9_rel_pos; ...
 };
 
 % x = linspace(-0.75, 0.75, 200);

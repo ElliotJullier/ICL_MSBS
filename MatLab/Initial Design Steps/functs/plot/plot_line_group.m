@@ -24,10 +24,18 @@ for k = 1:numel(reqs)
     components(k) = string(r.component);
 end
 
+% Shade coil presence using the first line in the group
+if isfield(reqs{1}, 'source_load_filename') && strlength(string(reqs{1}.source_load_filename)) > 0
+    add_coil_presence_to_line_plot(ax, reqs{1}, reqs{1}.source_load_filename);
+end
+
 hasLegend = any(cellfun(@(rr) isfield(rr,'legendName') && ~isempty(rr.legendName), reqs));
-if hasLegend
-    lgd = legend(ax, 'show', 'Location', 'best');
-    lgd.Interpreter = 'latex';
+
+legendObjs = findobj(ax, '-property', 'DisplayName');
+hasCoilLegend = any(arrayfun(@(h) strcmp(get(h, 'DisplayName'), 'Coil'), legendObjs));
+
+if hasLegend || hasCoilLegend
+    legend(ax, 'show', 'Location', 'best', 'Interpreter', 'latex');
 end
 
 grid(ax, 'on');
