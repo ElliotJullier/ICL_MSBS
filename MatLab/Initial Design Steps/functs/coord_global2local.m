@@ -1,4 +1,5 @@
 function output_grid = coord_global2local(input_grid, relative_position)
+% Elliot Jullier, 27/04/2026
 % This function applies a 3D translation of coordinate system then a
 % aerospace standard pitch-roll-yaw Euler rotations from a basis frame of reference (FoR) (see Wikipedia
 % Davenport chained rotations - section Tait-Bryan chained rotations, see
@@ -29,8 +30,8 @@ roll    = -relative_position(6);
 
 % negative of translations taken since FoR translation as input
 % Eg. a coord of (1, 1) in global
-% New FoR is translated by (0.5, 0.5) relative to global
-% Output coord should (obviously) be (0.5, 0.5)
+% New FoR is translated by (0.25, 0.25) relative to global
+% Output coord should (obviously) be (0.75, 0.75)
 translation_matrix = [x_trans; y_trans; z_trans];
 rotation_matrix = [cos(pitch)*cos(yaw), -cos(roll)*sin(yaw)+sin(roll)*sin(pitch)*cos(yaw), sin(roll)*sin(yaw)+cos(roll)*sin(pitch)*cos(yaw);
     cos(pitch)*sin(yaw), cos(roll)*cos(yaw)+sin(roll)*sin(pitch)*sin(yaw), -sin(roll)*cos(yaw)+cos(roll)*sin(pitch)*sin(yaw);
