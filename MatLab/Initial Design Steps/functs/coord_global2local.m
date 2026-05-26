@@ -36,8 +36,11 @@ translation_matrix = [x_trans; y_trans; z_trans];
 rotation_matrix = [cos(pitch)*cos(yaw), -cos(roll)*sin(yaw)+sin(roll)*sin(pitch)*cos(yaw), sin(roll)*sin(yaw)+cos(roll)*sin(pitch)*cos(yaw);
     cos(pitch)*sin(yaw), cos(roll)*cos(yaw)+sin(roll)*sin(pitch)*sin(yaw), -sin(roll)*cos(yaw)+cos(roll)*sin(pitch)*sin(yaw);
     -sin(pitch), sin(roll)*cos(pitch), cos(roll)*cos(pitch)];
-output_grid = zeros(3, length(input_grid));
-for i = 1:length(input_grid)
+output_grid = zeros(3, size(input_grid, 2));
+
+% Might be possible to vectorise this if we broadcast along a specific
+% dimension?
+for i = 1:size(input_grid, 2)
     % Rotation+ Transformation matrix is 4x4, whereas the input is 3x1, we
     % add a 1 at the botton of the input to allow the translations to take
     % effect
