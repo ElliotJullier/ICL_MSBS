@@ -7,7 +7,7 @@ function output_grid = coord_global2local(input_grid, relative_position)
 % angles (z-y'-x'' intrinsic) -> rotation matrix. See also https://codesignal.com/learn/courses/3d-worlds-and-matrix-transformations/lessons/translation-and-rotation-matrices
 %
 % ----- INPUTS -----
-% input_grid: An 3xN array of 3D coordinates that need translate + rotating
+% input_grid: An 3xN array of 3D coordinates that need translating + rotating
 % relative_position a 1x6 array containing the following (in order):
 % x_trans [m]: x-direction in m by which the new coordinate system in
 % translated compared to the 'global' FoR
@@ -37,9 +37,6 @@ rotation_matrix = [cos(pitch)*cos(yaw), -cos(roll)*sin(yaw)+sin(roll)*sin(pitch)
     cos(pitch)*sin(yaw), cos(roll)*cos(yaw)+sin(roll)*sin(pitch)*sin(yaw), -sin(roll)*cos(yaw)+cos(roll)*sin(pitch)*sin(yaw);
     -sin(pitch), sin(roll)*cos(pitch), cos(roll)*cos(pitch)];
 output_grid = zeros(3, size(input_grid, 2));
-
-% Might be possible to vectorise this if we broadcast along a specific
-% dimension?
 for i = 1:size(input_grid, 2)
     % Rotation+ Transformation matrix is 4x4, whereas the input is 3x1, we
     % add a 1 at the botton of the input to allow the translations to take

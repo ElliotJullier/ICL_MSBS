@@ -1,53 +1,66 @@
-function mag_field = Coil_Field(R, r, h, N, wire_R, wire_r, outputField, varargin)
+function mag_field = Coil_Field(coilSpec, outputField, varargin)
 % Simple volume integration of the Biot-Savart law, for constant current
 % (density) the field shape is dependant only only coil geometry
 %
-% Coil geometry assumed to be an annular cylinder.
+% Coil geometry assumed to be an annular cylinder with its axis along local z.
 %
 %  ----- INPUTS -----
-% R [m]: outer radius of the overall coil
-% r [m]: radius of the hole in the coil
-% N [-]: number of turns of wire in the radius
-% wire_R [m]: outer radius of the wire used for coil
-% wire_r [m]: inner radius of the annular cross-section of the wire
-% outputField [m^3]: a 3xN matrix containing the coordinates (x, y, z)
+% CoilSpec: A struct containing at least the following fields
+%   outerRadius [m]: Outer radius of the overall coil
+%   innerRadius [m]: Radius of the hole in the coil
+%   height [m]: Height of the coil
+%   turns [-]: Number of turns of wire in the coil
+%
+% outputField 3*[m]: a 3xN matrix containing the coordinates (x, y, z)
 % relative to the coil CoG in metres.
 %
 % ----- OPTIONAL INPUTS (name-value) -----
 % "progress" [logical]: print progress messages (default false)
-% "progressStepPercent" [numeric]: percentage step for messages (default 5)
-% "blockSize" [numeric]: number of output points per block (default 50000)
+% "progressStepPercent" [numeric]: percentage step for messages (default 5, must be between 0 and 100)
+% "blockSize" [numeric]: number of output points per block (default 50000, must be a positive integer)
+% "nRadial" [numeric]: radial integration cells (default 10, must be a positive integer)
+% "nAxial" [numeric]: axial integration cells (default 10, must be a positive integer)
+% "nTheta" [numeric]: azimuthal integration cells (default 40, must be a positive integer)
 %
 % ----- OUPUT(S) -----
-% mag_field [T^3]: A 3xN matrix containing (Bx, By, Bz) in Tesla.
+% mag_field 3*[T]: A 3xK matrix containing (Bx, By, Bz) in Tesla, where K is the number of grid points, for a cuboid this is x_gridresolution * y_gridres * z_gridres.
+
+% ------------------ Parse Coil Spec Input ------------------
+R = coilSpec.outerRadius;
+r = coilSpec.innerRadius;
+h = coilSpec.height;
+N = coilSpec.turns;
 
 % ------------------------- Options -------------------------
 p = inputParser;
 addParameter(p, "progress", false, @(x)islogical(x) || isnumeric(x));
 addParameter(p, "progressStepPercent", 5, @(x)isnumeric(x) && x>0 && x<=100);
 addParameter(p, "blockSize", 50000, @(x)isnumeric(x) && x>0);
+addParameter(p, "nRadial", 10, @(x)isnumeric(x) && isscalar(x) && x>0);
+addParameter(p, "nAxial", 10, @(x)isnumeric(x) && isscalar(x) && x>0);
+addParameter(p, "nTheta", 40, @(x)isnumeric(x) && isscalar(x) && x>0);
 parse(p, varargin{:});
 
 doProg  = logical(p.Results.progress);
 stepPct = p.Results.progressStepPercent;
 blkN    = round(p.Results.blockSize);
+nRadial = round(p.Results.nRadial);
+nAxial  = round(p.Results.nAxial);
+nTheta  = round(p.Results.nTheta);
 
 t_total = tic;
 
 
 % ------------------------- Discretising coil -------------------------
-grid_discretisation_level = 10;
-
-theta_sweep_edge   = linspace(0, 2*pi, 4*grid_discretisation_level+1);
+theta_sweep_edge   = linspace(0, 2*pi, nTheta+1);
 theta_sweep_centre = theta_sweep_edge(1:end-1) + (theta_sweep_edge(2:end)-theta_sweep_edge(1:end-1))/2;
 dtheta = theta_sweep_edge(2) - theta_sweep_edge(1);
 
-R_sweep_edge   = linspace(r, R, grid_discretisation_level+1);
+R_sweep_edge   = linspace(r, R, nRadial+1);
 R_sweep_centre = R_sweep_edge(1:end-1) + (R_sweep_edge(2:end)-R_sweep_edge(1:end-1))/2;
 dR = R_sweep_edge(2) - R_sweep_edge(1);
 
-% z_sweep_edge   = linspace(0, h, grid_discretisation_level+1);
-z_sweep_edge   = linspace(-h/2, h/2, grid_discretisation_level+1);
+z_sweep_edge   = linspace(-h/2, h/2, nAxial+1);
 z_sweep_centre = z_sweep_edge(1:end-1) + (z_sweep_edge(2:end)-z_sweep_edge(1:end-1))/2;
 dz = z_sweep_edge(2) - z_sweep_edge(1);
 
@@ -98,7 +111,7 @@ for j = 1:Nelems
     w = dV(j);
 
     % Block over output points
-    for s = 1:blkN:Npts % Splits the calc into chunks of blockSize (50k default) to avoid huge temprary variables (a 200x100x100 grid gives a 2MB var)
+    for s = 1:blkN:Npts % Splits the calc into chunks of blockSize to avoid huge temporary variables (a 200x100x100 grid gives a 2MB var)
         e = min(s + blkN - 1, Npts);
 
         dx = outputField(1, s:e) - cx;
@@ -123,7 +136,7 @@ for j = 1:Nelems
 end
 
 % ------------------------- Scaling -------------------------
-mag_field = 1.2566*10^-6/(4*pi)*N/(h*(R-r))*mag_field;
+mag_field = (4*pi*1e-7)/(4*pi)*N/(h*(R-r))*mag_field;
 
 if doProg
     fprintf("[%s] Coil_Field finished in %.1f s\n", datestr(now,"HH:MM:SS"), toc(t_total));

@@ -1,6 +1,14 @@
 function set_plane_view(ax, r)
-if isfield(r, 'plane')
-    switch lower(char(string(r.plane)))
+if isfield(r, 'query') && isfield(r.query, 'plane')
+    planeName = r.query.plane;
+elseif isfield(r, 'plane')
+    planeName = r.plane;
+else
+    planeName = "";
+end
+
+if strlength(string(planeName)) > 0
+    switch lower(char(string(planeName)))
         case "xy"
             view(ax, 0, 90);
         case "xz"
@@ -10,8 +18,8 @@ if isfield(r, 'plane')
         otherwise
             view(ax, 3);
     end
-elseif isfield(r, 'normal')
-    n = r.normal(:);
+elseif isfield(r, 'query') && isfield(r.query, 'normal')
+    n = r.query.normal(:);
     if norm(n) < eps
         view(ax, 3);
         return

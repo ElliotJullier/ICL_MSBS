@@ -1,16 +1,22 @@
-function coil_shape = extract_coilShape(Ro, Ri, h, rel_pos)
+function coil_shape = extract_coilShape(coilSpec, rel_pos)
 % Build a triangulated surface for an annular cylindrical coil.
 %
 % INPUTS
-%   Ro      outer radius [m]
-%   Ri      inner radius [m]
-%   h       coil height [m]
+%   coilSpec: struct containing at least the following variables
+%   outerRadius [m]: Outer radius of the overall coil
+%   innerRadius [m]: Radius of the hole in the coil
+%   height [m]: Height of the coil
+%
 %   rel_pos [x y z yaw pitch roll]
 %
 % OUTPUT
 %   coil_shape struct with:
 %       .Faces
 %       .Vertices
+
+Ro = coilSpec.outerRadius;
+Ri = coilSpec.innerRadius;
+h = coilSpec.height;
 
 nTheta = 20;
 nRad   = 5;

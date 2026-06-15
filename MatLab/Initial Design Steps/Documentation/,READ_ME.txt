@@ -1,0 +1,2 @@
+Finished the magnetic_field_calc_main section
+Currently in the query_main section. Within that just finished run_field_queries, need to start from there with validate_query_for_model and then continue down logic chain 1 by 1 until all functions covered
