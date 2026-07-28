@@ -1,0 +1,108 @@
+Plot metadata
+=============
+
+Figure title: Line group 1 - Q_Comparison_batch2_QueryBatch
+Created on: 2026-06-15 17:36:38
+Q file: Q_Comparison_batch2_QueryBatch.mat
+Number of plotted records: 5
+
+Record 1
+--------
+Case name: Simple Biot-Savart (Morgan Layout)
+Model: simple_biotsavart
+Query name: Simple two-coil on-axis Bz
+Data name: Bz
+Query index: 1
+Result index: 1
+Query type: line
+Quantity: field
+Component: z
+Plot group: 1
+Overview requested: false
+ShowCoils requested: false
+Dataset source: simple_biotsavart
+Dataset file: simple_two_coil_dataset.mat
+Query file: .\Q_Comparison_batch2_QueryBatch.mat
+Data size: [300 1]
+Finite data points: 300
+
+Record 2
+--------
+Case name: Full B-S Integration
+Model: matlab_full_biotsavart
+Query name: Full B-S centreline Bz
+Data name: Bz
+Query index: 2
+Result index: 2
+Query type: line
+Quantity: field
+Component: z
+Plot group: 1
+Overview requested: true
+ShowCoils requested: true
+Dataset source: matlab_full_biotsavart
+Dataset file: MorganSetup_FullBS.mat
+Query file: .\Q_Comparison_batch2_QueryBatch.mat
+Data size: [300 1]
+Finite data points: 300
+
+Record 3
+--------
+Case name: COMSOL Circular Prediction
+Model: comsol_grid
+Query name: line query 2
+Data name: Bz
+Query index: 2
+Result index: 2
+Query type: line
+Quantity: field
+Component: z
+Plot group: 1
+Overview requested: false
+ShowCoils requested: false
+Dataset source: comsol_precomputed
+Dataset file: Morgan_Circular_Export.txt
+Query file: .\Q_Comparison_batch2_QueryBatch.mat
+Data size: [200 1]
+Finite data points: 200
+
+Record 4
+--------
+Case name: COMSOL Square Cylinder Prediction
+Model: comsol_grid
+Query name: line query 2
+Data name: Bz
+Query index: 2
+Result index: 2
+Query type: line
+Quantity: field
+Component: z
+Plot group: 1
+Overview requested: false
+ShowCoils requested: false
+Dataset source: comsol_precomputed
+Dataset file: Morgan_Square_Export.txt
+Query file: .\Q_Comparison_batch2_QueryBatch.mat
+Data size: [200 1]
+Finite data points: 200
+
+Record 5
+--------
+Case name: Morgan Analytical
+Model: analytical_line
+Query name: Morgan Analytical centreline Bz
+Data name: Bz
+Query index: 1
+Result index: 1
+Query type: line
+Quantity: field
+Component: z
+Plot group: 1
+Overview requested: false
+ShowCoils requested: false
+Dataset source: external_analytical_line
+Dataset file: Morgan_Bz_analytical.mat
+Query file: .\Q_Comparison_batch2_QueryBatch.mat
+Data size: [239 1]
+Finite data points: 239
+

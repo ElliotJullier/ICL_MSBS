@@ -1,0 +1,46 @@
+classdef TestMagnetSizing < matlab.unittest.TestCase
+    methods(Test)
+        function shrinkEveryDimension(testCase)
+            [cfg,g,root]=localSetup();cfg.magnets.automatic.linear_shrink_fraction=0.1;
+            [sets,~]=msbsreq.buildMagnetSets(cfg,g,root);
+            expected=0.9*g.inscribed_cuboid.dimensions_B_m;
+            testCase.verifyEqual(sets(1).magnets.dimensions_local_m,expected,'RelTol',1e-12);
+        end
+        function volumeDipoleAndMass(testCase)
+            [cfg,g,root]=localSetup();[sets,~]=msbsreq.buildMagnetSets(cfg,g,root);m=sets(1).magnets;
+            testCase.verifyEqual(m.volume_m3,prod(m.dimensions_local_m),'RelTol',1e-14);
+            expected=m.Br_selected_T/(4*pi*1e-7)*m.volume_m3;
+            testCase.verifyEqual(m.dipole_moment_magnitude_Am2,expected,'RelTol',1e-12);
+            mp=msbsreq.calculateMassProperties(cfg,g,sets(1));
+            testCase.verifyEqual(mp.total_mass_kg,cfg.mass.shell_mass_factor*m.mass_kg,'RelTol',1e-12);
+        end
+        function dipoleOverride(testCase)
+            [cfg,g,root]=localSetup();cfg.magnets.automatic.dipole_moment_override_Am2=7.5;
+            [sets,~]=msbsreq.buildMagnetSets(cfg,g,root);
+            testCase.verifyEqual(sets(1).magnets.dipole_moment_magnitude_Am2,7.5,'AbsTol',1e-14);
+        end
+        function hybridCentreOfMass(testCase)
+            [cfg,g,root]=localSetup();cfg.magnets.automatic.centre_offset_B_m=[0.01;0;0];
+            [sets,~]=msbsreq.buildMagnetSets(cfg,g,root);mp=msbsreq.calculateMassProperties(cfg,g,sets(1));
+            expected=sets(1).magnets.mass_kg*0.01/mp.total_mass_kg;
+            testCase.verifyEqual(mp.centre_of_mass_B_m(1),expected,'RelTol',1e-12);
+        end
+        function manualTwoMagnetStudyRuns(testCase)
+            cfg=case_test_equivalence();
+            m1.name="front";m1.dimensions_local_m=[0.04;0.02;0.02];m1.centre_B_m=[0.04;0;0];
+            m1.R_BM=eye(3);m1.grade="N52";m1.magnetisation_direction_M=[1;0;0];
+            m1.effective_magnetisation_factor=1;m1.dipole_moment_override_Am2=[];m1.density_override_kgm3=[];
+            m2=m1;m2.name="rear";m2.centre_B_m=[-0.04;0;0];m2.magnetisation_direction_M=[0;1;0];
+            cfg.magnets.mode="manual_sets";cfg.magnets.sets=struct([]);
+            cfg.magnets.sets(1).name="two_nonparallel";cfg.magnets.sets(1).magnets=[m1 m2];
+            study=runStudy(cfg);
+            testCase.verifyEqual(numel(study.magnet_sets),1);
+            testCase.verifyEqual(numel(study.magnet_sets(1).magnets),2);
+            testCase.verifyEqual(height(study.results),height(study.scenarios));
+        end
+    end
+end
+function [cfg,g,root]=localSetup()
+root=string(fileparts(fileparts(mfilename('fullpath'))));cfg=msbsreq.resolveConfig(struct());
+t=msbsreq.buildTunnel(cfg);g=msbsreq.buildGeometry(cfg,t);
+end

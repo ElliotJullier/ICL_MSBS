@@ -1,0 +1,108 @@
+Plot metadata
+=============
+
+Figure title: Line group 3 - Q_Comparison_batch5_QueryBatch
+Created on: 2026-06-15 18:18:22
+Q file: Q_Comparison_batch5_QueryBatch.mat
+Number of plotted records: 5
+
+Record 1
+--------
+Case name: Full B-S Integration
+Model: matlab_full_biotsavart
+Query name: Centreline
+Data name: dBz/dz
+Query index: 7
+Result index: 7
+Query type: line
+Quantity: gradient
+Component: z
+Plot group: 3
+Overview requested: false
+ShowCoils requested: false
+Dataset source: matlab_full_biotsavart
+Dataset file: MorganSetup_FullBS.mat
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [300 1]
+Finite data points: 300
+
+Record 2
+--------
+Case name: Full B-S Integration
+Model: matlab_full_biotsavart
+Query name: 15mm Offset
+Data name: dBz/dz
+Query index: 8
+Result index: 8
+Query type: line
+Quantity: gradient
+Component: z
+Plot group: 3
+Overview requested: false
+ShowCoils requested: false
+Dataset source: matlab_full_biotsavart
+Dataset file: MorganSetup_FullBS.mat
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [300 1]
+Finite data points: 300
+
+Record 3
+--------
+Case name: Full B-S Integration
+Model: matlab_full_biotsavart
+Query name: 30 mm Offset
+Data name: dBz/dz
+Query index: 9
+Result index: 9
+Query type: line
+Quantity: gradient
+Component: z
+Plot group: 3
+Overview requested: false
+ShowCoils requested: false
+Dataset source: matlab_full_biotsavart
+Dataset file: MorganSetup_FullBS.mat
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [300 1]
+Finite data points: 300
+
+Record 4
+--------
+Case name: Full B-S Integration
+Model: matlab_full_biotsavart
+Query name: 45 mm Offset
+Data name: dBz/dz
+Query index: 10
+Result index: 10
+Query type: line
+Quantity: gradient
+Component: z
+Plot group: 3
+Overview requested: false
+ShowCoils requested: false
+Dataset source: matlab_full_biotsavart
+Dataset file: MorganSetup_FullBS.mat
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [300 1]
+Finite data points: 300
+
+Record 5
+--------
+Case name: Full B-S Integration
+Model: matlab_full_biotsavart
+Query name: 60 mm Offset
+Data name: dBz/dz
+Query index: 11
+Result index: 11
+Query type: line
+Quantity: gradient
+Component: z
+Plot group: 3
+Overview requested: false
+ShowCoils requested: false
+Dataset source: matlab_full_biotsavart
+Dataset file: MorganSetup_FullBS.mat
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [300 1]
+Finite data points: 300
+

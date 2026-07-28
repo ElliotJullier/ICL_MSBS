@@ -1,0 +1,67 @@
+function resultTable = buildResultTable(records)
+%BUILDRESULTTABLE Flatten full calculation records into a CSV-friendly table.
+arguments
+    records (:,1) struct
+end
+n=numel(records);
+rows=repmat(localEmptyRow(),n,1);
+for i=1:n
+    rec=records(i); s=rec.loads.scenario; sol=rec.solution; G=sol.G_Tpm;
+    aero=rec.loads.aero_wrench_T; grav=rec.loads.gravity_wrench_T;
+    other=rec.loads.other_wrench_T; inertial=rec.loads.inertial_demand_T;
+    req=rec.loads.required_magnetic_wrench_T;
+    row=localEmptyRow();
+    row.scenario_id=s.scenario_id;
+    row.scenario_name=s.scenario_name;
+    row.magnet_set_id=rec.magnet_set.id;
+    row.magnet_set_name=rec.magnet_set.name;
+    row.speed_mps=s.speed_mps; row.rho_kgm3=s.rho_kgm3;
+    row.CD=s.CD; row.CL=s.CL; row.Cm=s.Cm;
+    row.motion_case=s.motion_case; row.body_attitude_case=s.body_attitude_case;
+    row.wind_orientation_case=s.wind_orientation_case;
+    row.Fx_aero_N=aero(1);row.Fy_aero_N=aero(2);row.Fz_aero_N=aero(3);
+    row.Mx_aero_Nm=aero(4);row.My_aero_Nm=aero(5);row.Mz_aero_Nm=aero(6);
+    row.Fx_gravity_N=grav(1);row.Fy_gravity_N=grav(2);row.Fz_gravity_N=grav(3);
+    row.Fx_other_N=other(1);row.Fy_other_N=other(2);row.Fz_other_N=other(3);
+    row.Mx_other_Nm=other(4);row.My_other_Nm=other(5);row.Mz_other_Nm=other(6);
+    row.Fx_inertial_demand_N=inertial(1);row.Fy_inertial_demand_N=inertial(2);row.Fz_inertial_demand_N=inertial(3);
+    row.Mx_inertial_demand_Nm=inertial(4);row.My_inertial_demand_Nm=inertial(5);row.Mz_inertial_demand_Nm=inertial(6);
+    row.Fx_mag_req_N=req(1);row.Fy_mag_req_N=req(2);row.Fz_mag_req_N=req(3);
+    row.Mx_mag_req_Nm=req(4);row.My_mag_req_Nm=req(5);row.Mz_mag_req_Nm=req(6);
+    row.force_req_norm_N=norm(req(1:3));row.moment_req_norm_Nm=norm(req(4:6));
+    row.Bx_T=sol.B0_T(1);row.By_T=sol.B0_T(2);row.Bz_T=sol.B0_T(3);
+    row.gxx_Tpm=G(1,1);row.gyy_Tpm=G(2,2);row.gzz_Tpm=G(3,3);
+    row.gxy_Tpm=G(1,2);row.gxz_Tpm=G(1,3);row.gyz_Tpm=G(2,3);
+    row.B_norm_T=sol.B0_norm_T;row.B_local_max_norm_T=sol.B_local_max_norm_T;
+    row.G_frobenius_Tpm=sol.G_frobenius_Tpm;
+    row.G_max_abs_Tpm=sol.G_max_abs_component_Tpm;
+    row.scaled_solution_norm=sol.scaled_solution_norm;
+    row.force_residual_norm_N=sol.force_residual_norm_N;
+    row.moment_residual_norm_Nm=sol.moment_residual_norm_Nm;
+    row.relative_scaled_residual=sol.relative_scaled_residual;
+    row.controllable=sol.controllable;
+    row.map_rank=sol.rank;row.map_condition_number=sol.condition_number;
+    rows(i)=row;
+end
+resultTable=struct2table(rows,'AsArray',true);
+end
+
+function row=localEmptyRow()
+row=struct( ...
+'scenario_id',"",'scenario_name',"",'magnet_set_id',"",'magnet_set_name',"", ...
+'speed_mps',NaN,'rho_kgm3',NaN,'CD',NaN,'CL',NaN,'Cm',NaN, ...
+'motion_case',"",'body_attitude_case',"",'wind_orientation_case',"", ...
+'Fx_aero_N',NaN,'Fy_aero_N',NaN,'Fz_aero_N',NaN,'Mx_aero_Nm',NaN,'My_aero_Nm',NaN,'Mz_aero_Nm',NaN, ...
+'Fx_gravity_N',NaN,'Fy_gravity_N',NaN,'Fz_gravity_N',NaN, ...
+'Fx_other_N',NaN,'Fy_other_N',NaN,'Fz_other_N',NaN,'Mx_other_Nm',NaN,'My_other_Nm',NaN,'Mz_other_Nm',NaN, ...
+'Fx_inertial_demand_N',NaN,'Fy_inertial_demand_N',NaN,'Fz_inertial_demand_N',NaN, ...
+'Mx_inertial_demand_Nm',NaN,'My_inertial_demand_Nm',NaN,'Mz_inertial_demand_Nm',NaN, ...
+'Fx_mag_req_N',NaN,'Fy_mag_req_N',NaN,'Fz_mag_req_N',NaN, ...
+'Mx_mag_req_Nm',NaN,'My_mag_req_Nm',NaN,'Mz_mag_req_Nm',NaN, ...
+'force_req_norm_N',NaN,'moment_req_norm_Nm',NaN, ...
+'Bx_T',NaN,'By_T',NaN,'Bz_T',NaN,'gxx_Tpm',NaN,'gyy_Tpm',NaN,'gzz_Tpm',NaN, ...
+'gxy_Tpm',NaN,'gxz_Tpm',NaN,'gyz_Tpm',NaN,'B_norm_T',NaN,'B_local_max_norm_T',NaN, ...
+'G_frobenius_Tpm',NaN,'G_max_abs_Tpm',NaN,'scaled_solution_norm',NaN, ...
+'force_residual_norm_N',NaN,'moment_residual_norm_Nm',NaN,'relative_scaled_residual',NaN, ...
+'controllable',false,'map_rank',NaN,'map_condition_number',NaN);
+end

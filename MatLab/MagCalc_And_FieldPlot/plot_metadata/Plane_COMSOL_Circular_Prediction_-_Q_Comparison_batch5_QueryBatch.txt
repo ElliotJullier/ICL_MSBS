@@ -1,0 +1,28 @@
+Plot metadata
+=============
+
+Figure title: Plane: COMSOL Circular Prediction - Q_Comparison_batch5_QueryBatch
+Created on: 2026-06-15 18:23:07
+Q file: Q_Comparison_batch5_QueryBatch.mat
+Number of plotted records: 1
+
+Record 1
+--------
+Case name: COMSOL Circular Prediction
+Model: comsol_grid
+Query name: custom_plane query 2
+Data name: Bz
+Query index: 2
+Result index: 2
+Query type: custom_plane
+Quantity: field
+Component: z
+Plot group: []
+Overview requested: true
+ShowCoils requested: false
+Dataset source: comsol_precomputed
+Dataset file: Morgan_Circular_Export.txt
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [150 150]
+Finite data points: 22200
+

@@ -1,0 +1,28 @@
+Plot metadata
+=============
+
+Figure title: Plane: Full B-S Integration - Q_Comparison_batch3_QueryBatch
+Created on: 2026-06-15 17:46:44
+Q file: Q_Comparison_batch3_QueryBatch.mat
+Number of plotted records: 1
+
+Record 1
+--------
+Case name: Full B-S Integration
+Model: matlab_full_biotsavart
+Query name: xz-plane Bz
+Data name: Bz
+Query index: 1
+Result index: 1
+Query type: fundamental_plane
+Quantity: field
+Component: z
+Plot group: []
+Overview requested: true
+ShowCoils requested: true
+Dataset source: matlab_full_biotsavart
+Dataset file: MorganSetup_FullBS.mat
+Query file: .\Q_Comparison_batch3_QueryBatch.mat
+Data size: [200 100]
+Finite data points: 20000
+

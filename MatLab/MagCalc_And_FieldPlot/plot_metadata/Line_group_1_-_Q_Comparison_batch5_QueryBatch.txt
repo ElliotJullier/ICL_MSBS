@@ -1,0 +1,108 @@
+Plot metadata
+=============
+
+Figure title: Line group 1 - Q_Comparison_batch5_QueryBatch
+Created on: 2026-06-15 18:23:07
+Q file: Q_Comparison_batch5_QueryBatch.mat
+Number of plotted records: 5
+
+Record 1
+--------
+Case name: COMSOL Circular Prediction
+Model: comsol_grid
+Query name: Centreline
+Data name: dBz/dz
+Query index: 3
+Result index: 3
+Query type: line
+Quantity: gradient
+Component: z
+Plot group: 1
+Overview requested: false
+ShowCoils requested: false
+Dataset source: comsol_precomputed
+Dataset file: Morgan_Circular_Export.txt
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [200 1]
+Finite data points: 200
+
+Record 2
+--------
+Case name: COMSOL Circular Prediction
+Model: comsol_grid
+Query name: 15 mm Offset
+Data name: dBz/dz
+Query index: 4
+Result index: 4
+Query type: line
+Quantity: gradient
+Component: z
+Plot group: 1
+Overview requested: false
+ShowCoils requested: false
+Dataset source: comsol_precomputed
+Dataset file: Morgan_Circular_Export.txt
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [200 1]
+Finite data points: 200
+
+Record 3
+--------
+Case name: COMSOL Circular Prediction
+Model: comsol_grid
+Query name: 30mm Offset
+Data name: dBz/dz
+Query index: 5
+Result index: 5
+Query type: line
+Quantity: gradient
+Component: z
+Plot group: 1
+Overview requested: false
+ShowCoils requested: false
+Dataset source: comsol_precomputed
+Dataset file: Morgan_Circular_Export.txt
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [200 1]
+Finite data points: 200
+
+Record 4
+--------
+Case name: COMSOL Circular Prediction
+Model: comsol_grid
+Query name: 45 mm Offset
+Data name: dBz/dz
+Query index: 6
+Result index: 6
+Query type: line
+Quantity: gradient
+Component: z
+Plot group: 1
+Overview requested: false
+ShowCoils requested: false
+Dataset source: comsol_precomputed
+Dataset file: Morgan_Circular_Export.txt
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [200 1]
+Finite data points: 200
+
+Record 5
+--------
+Case name: COMSOL Circular Prediction
+Model: comsol_grid
+Query name: 60 mm Offset
+Data name: dBz/dz
+Query index: 7
+Result index: 7
+Query type: line
+Quantity: gradient
+Component: z
+Plot group: 1
+Overview requested: false
+ShowCoils requested: false
+Dataset source: comsol_precomputed
+Dataset file: Morgan_Circular_Export.txt
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [200 1]
+Finite data points: 200
+

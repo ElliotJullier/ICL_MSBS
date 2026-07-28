@@ -1,0 +1,48 @@
+Plot metadata
+=============
+
+Figure title: Line group 2 - Q_Comparison_batch5_QueryBatch
+Created on: 2026-06-15 18:23:07
+Q file: Q_Comparison_batch5_QueryBatch.mat
+Number of plotted records: 2
+
+Record 1
+--------
+Case name: Simple Biot-Savart (Morgan Layout)
+Model: simple_biotsavart
+Query name: Simple two-coil on-axis Bz
+Data name: Bz
+Query index: 1
+Result index: 1
+Query type: line
+Quantity: field
+Component: z
+Plot group: 2
+Overview requested: false
+ShowCoils requested: false
+Dataset source: simple_biotsavart
+Dataset file: simple_two_coil_dataset.mat
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [300 1]
+Finite data points: 300
+
+Record 2
+--------
+Case name: Morgan Analytical
+Model: analytical_line
+Query name: Morgan Analytical centreline Bz
+Data name: Bz
+Query index: 1
+Result index: 1
+Query type: line
+Quantity: field
+Component: z
+Plot group: 2
+Overview requested: false
+ShowCoils requested: false
+Dataset source: external_analytical_line
+Dataset file: Morgan_Bz_analytical.mat
+Query file: .\Q_Comparison_batch5_QueryBatch.mat
+Data size: [239 1]
+Finite data points: 239
+

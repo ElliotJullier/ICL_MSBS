@@ -1,0 +1,5 @@
+grade,Br_nominal_T,Br_min_T,Br_max_T,density_kgm3,temperature_C,source_reference,source_note
+N35,1.195,1.17,1.22,7500,20,"Generic NdFeB range; Magnet Store UK anticipated supplier","Editable placeholder. Verify against the exact magnetstore.co.uk product datasheet before procurement or conservative sizing."
+N42,1.315,1.29,1.34,7500,20,"Generic NdFeB range; Magnet Store UK anticipated supplier","Editable placeholder. Verify against the exact magnetstore.co.uk product datasheet before procurement or conservative sizing."
+N48,1.405,1.38,1.43,7500,20,"Generic NdFeB range; Magnet Store UK anticipated supplier","Editable placeholder. Verify against the exact magnetstore.co.uk product datasheet before procurement or conservative sizing."
+N52,1.455,1.43,1.48,7500,20,"Generic NdFeB range; Magnet Store UK anticipated supplier","Editable placeholder. Verify against the exact magnetstore.co.uk product datasheet before procurement or conservative sizing."

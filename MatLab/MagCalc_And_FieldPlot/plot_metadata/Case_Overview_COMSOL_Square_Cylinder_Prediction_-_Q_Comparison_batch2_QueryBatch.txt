@@ -1,0 +1,28 @@
+Plot metadata
+=============
+
+Figure title: Case Overview: COMSOL Square Cylinder Prediction - Q_Comparison_batch2_QueryBatch
+Created on: 2026-06-15 17:36:38
+Q file: Q_Comparison_batch2_QueryBatch.mat
+Number of plotted records: 1
+
+Record 1
+--------
+Case name: COMSOL Square Cylinder Prediction
+Model: comsol_grid
+Query name: fundamental_plane query 1
+Data name: Bz
+Query index: 1
+Result index: 1
+Query type: fundamental_plane
+Quantity: field
+Component: z
+Plot group: []
+Overview requested: true
+ShowCoils requested: false
+Dataset source: comsol_precomputed
+Dataset file: Morgan_Square_Export.txt
+Query file: .\Q_Comparison_batch2_QueryBatch.mat
+Data size: [300 100]
+Finite data points: 30000
+
