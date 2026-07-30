@@ -26,8 +26,8 @@ classdef TestLoads < matlab.unittest.TestCase
             raw.motion.harmonic.translation_amplitude_m=[0.01;0;0];
             raw.motion.harmonic.angular_amplitude_rad=[0;0.1;0];raw.motion.harmonic.samples_per_cycle=4;
             cfg=msbsreq.resolveConfig(raw);S=msbsreq.buildScenarioTable(cfg);
-            accelerations=cellfun(@(v)v(1),S.a_C_T_mps2);
-            testCase.verifyEqual(max(abs(accelerations)),(2*pi*2)^2*0.01,'RelTol',1e-12);
+            accelerationMagnitudes=cellfun(@norm,S.a_C_T_mps2);
+            testCase.verifyEqual(max(accelerationMagnitudes),(2*pi*2)^2*0.01,'RelTol',1e-12);
             testCase.verifyGreaterThan(norm(S.R_TB{2}-eye(3),'fro'),0);
         end
         function gravityChangesWithTunnelOrientation(testCase)

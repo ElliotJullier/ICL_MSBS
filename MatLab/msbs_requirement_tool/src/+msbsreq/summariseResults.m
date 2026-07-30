@@ -6,7 +6,7 @@ arguments
 end
 setIds=unique(resultTable.magnet_set_id,'stable');
 setRows=repmat(localEmptySetRow(),numel(setIds),1);
-envelopes=repmat(struct(),numel(setIds),1);
+envelopes=repmat(localEmptyEnvelope(),numel(setIds),1);
 for i=1:numel(setIds)
     id=setIds(i); mask=resultTable.magnet_set_id==id; T=resultTable(mask,:);
     [maxForce,iForce]=max(T.force_req_norm_N);
@@ -66,6 +66,15 @@ order=[acceptedOrder(:);rejectedOrder(:)];
 summary.ranking=summary.magnet_set_summary(order,:);
 summary.ranking_note="Residual-accepted sets are ordered by magnetic effort; rejected sets are ordered by residual first, then effort.";
 summary.acceptance_relative_residual=cfg.magnetic.acceptance_relative_residual;
+end
+
+
+function env=localEmptyEnvelope()
+env=struct('magnet_set_id',"", ...
+    'force_min',zeros(1,3),'force_min_scenario_id',strings(1,3), ...
+    'force_max',zeros(1,3),'force_max_scenario_id',strings(1,3), ...
+    'moment_min',zeros(1,3),'moment_min_scenario_id',strings(1,3), ...
+    'moment_max',zeros(1,3),'moment_max_scenario_id',strings(1,3));
 end
 
 function env=localComponentEnvelopes(T,id)

@@ -1,5 +1,13 @@
 classdef TestMagnetSizing < matlab.unittest.TestCase
     methods(Test)
+        function magnetDatabaseLoadsWithStableHeaders(testCase)
+            root=string(fileparts(fileparts(mfilename('fullpath'))));
+            T=msbsreq.loadMagnetGradeTable(root);
+            required=["grade","Br_nominal_T","Br_min_T","Br_max_T", ...
+                "density_kgm3","temperature_C","source_reference","source_note"];
+            testCase.verifyTrue(all(ismember(required,string(T.Properties.VariableNames))));
+            testCase.verifyTrue(any(strcmpi(T.("grade"),"N52")));
+        end
         function shrinkEveryDimension(testCase)
             [cfg,g,root]=localSetup();cfg.magnets.automatic.linear_shrink_fraction=0.1;
             [sets,~]=msbsreq.buildMagnetSets(cfg,g,root);
@@ -20,7 +28,9 @@ classdef TestMagnetSizing < matlab.unittest.TestCase
             testCase.verifyEqual(sets(1).magnets.dipole_moment_magnitude_Am2,7.5,'AbsTol',1e-14);
         end
         function hybridCentreOfMass(testCase)
-            [cfg,g,root]=localSetup();cfg.magnets.automatic.centre_offset_B_m=[0.01;0;0];
+            [cfg,g,root]=localSetup();
+            cfg.magnets.automatic.linear_shrink_fraction=0.1;
+            cfg.magnets.automatic.centre_offset_B_m=[0.01;0;0];
             [sets,~]=msbsreq.buildMagnetSets(cfg,g,root);mp=msbsreq.calculateMassProperties(cfg,g,sets(1));
             expected=sets(1).magnets.mass_kg*0.01/mp.total_mass_kg;
             testCase.verifyEqual(mp.centre_of_mass_B_m(1),expected,'RelTol',1e-12);

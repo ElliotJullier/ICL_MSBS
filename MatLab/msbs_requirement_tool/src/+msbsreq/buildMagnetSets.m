@@ -6,12 +6,11 @@ arguments
     projectRoot (1,1) string
 end
 
-gradeTable = readtable(fullfile(projectRoot,'data','magnet_grades.csv'), ...
-    'TextType','string');
+gradeTable = msbsreq.loadMagnetGradeTable(projectRoot);
 warnings = strings(0,1);
-warnings(end+1) = "Magnet remanence values are editable generic placeholders; verify the exact Magnet Store product datasheet.";
+warnings(end+1,1) = "Magnet remanence values are editable generic placeholders; verify the exact Magnet Store product datasheet.";
 if ~cfg.magnets.check_containment
-    warnings(end+1) = "Magnet containment checking is disabled; the user is responsible for confirming every magnet fits inside the model.";
+    warnings(end+1,1) = "Magnet containment checking is disabled; the user is responsible for confirming every magnet fits inside the model.";
 end
 
 switch cfg.magnets.mode
@@ -45,7 +44,7 @@ switch cfg.magnets.mode
             magnetSets(i).magnets = magnet;
             magnetSets(i).automatic_candidate = true;
         end
-        warnings(end+1) = "Automatic axis comparison assumes each candidate magnetisation direction is manufacturable for the selected cuboid.";
+        warnings(end+1,1) = "Automatic axis comparison assumes each candidate magnetisation direction is manufacturable for the selected cuboid.";
     case "manual_sets"
         count = numel(cfg.magnets.sets);
         magnetSets = repmat(localEmptySet(), count, 1);
@@ -123,18 +122,22 @@ if ~isequal(size(magnet.R_BM),[3 3]) || any(~isfinite(magnet.R_BM),'all') || ...
         norm(magnet.R_BM.'*magnet.R_BM-eye(3),'fro')>1e-10 || abs(det(magnet.R_BM)-1)>1e-10
     error('msbsreq:InvalidMagnetRotation','R_BM must be a proper rotation matrix.');
 end
-row = find(strcmpi(gradeTable.grade,magnet.grade),1);
+row = find(strcmpi(gradeTable.("grade"),magnet.grade),1);
 if isempty(row)
     error('msbsreq:UnknownMagnetGrade','Unknown magnet grade %s.',magnet.grade);
 end
+BrNominal = gradeTable.("Br_nominal_T");
+BrMinimum = gradeTable.("Br_min_T");
+BrMaximum = gradeTable.("Br_max_T");
+densities = gradeTable.("density_kgm3");
 switch cfg.magnets.remanence_selection
-    case "nominal", Br = gradeTable.Br_nominal_T(row);
-    case "minimum", Br = gradeTable.Br_min_T(row);
-    case "maximum", Br = gradeTable.Br_max_T(row);
+    case "nominal", Br = BrNominal(row);
+    case "minimum", Br = BrMinimum(row);
+    case "maximum", Br = BrMaximum(row);
     case "manual", Br = cfg.magnets.manual_Br_T;
 end
 if isempty(magnet.density_override_kgm3)
-    density = gradeTable.density_kgm3(row);
+    density = densities(row);
 else
     density = magnet.density_override_kgm3;
 end
@@ -161,8 +164,10 @@ magnet.mass_kg = density*volume;
 magnet.dipole_moment_magnitude_Am2 = magnitude;
 magnet.dipole_moment_M_Am2 = magnitude*magnet.magnetisation_direction_M;
 magnet.dipole_moment_B_Am2 = magnet.R_BM*magnet.dipole_moment_M_Am2;
-magnet.grade_source_reference = gradeTable.source_reference(row);
-magnet.grade_source_note = gradeTable.source_note(row);
+references = gradeTable.("source_reference");
+notes = gradeTable.("source_note");
+magnet.grade_source_reference = references(row);
+magnet.grade_source_note = notes(row);
 end
 
 function value = localUnit(value,name)

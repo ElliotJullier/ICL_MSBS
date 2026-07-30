@@ -2,7 +2,7 @@
 
 ## MATLAB cannot find `runStudy`
 
-Set MATLAB's Current Folder to the project root containing `runStudy.m`. Do not start in `cases/` or `src/`.
+Set MATLAB's Current Folder to the project root containing `runStudy.m`. Do not start in `cases/` or `src/`. Version 0.1.1 and later add the project root explicitly while `runAllTests` is running. After replacing an older project copy, run `clear functions` and `rehash path` once before rerunning the tests.
 
 ## The case function is not found
 
@@ -35,6 +35,11 @@ Speed and density cannot have negative lower bounds. Aerodynamic coefficients ca
 ## Unknown magnet grade
 
 Edit or add the grade in `data/magnet_grades.csv`. The delivered N35–N52 rows are configurable generic placeholders intended for later replacement with exact Magnet Store product data.
+
+
+## Magnet database headers are renamed or `grade` is unrecognised
+
+Use version 0.1.1 or later. Magnet data are loaded through `msbsreq.loadMagnetGradeTable`, which fixes the CSV delimiter, preserves the documented column names, and validates the complete schema before calculations begin.
 
 ## Magnet lies outside the model
 
@@ -75,3 +80,7 @@ for calculation-only runs while diagnosing graphics configuration.
 ## The result appears physically unrealistic
 
 Check the warnings and assumptions in `run_summary.md`. Common causes are generic remanence, a magnet too large for a point-dipole approximation, widely separated magnets under one first-order gradient, approximate shell inertia, unrealistic simultaneous factorial corners, or aerodynamic coefficients defined using a different reference area or moment point.
+
+## `MATLAB:catenate:dimensionMismatch` while collecting warnings
+
+Use version 0.1.2 or later. Earlier versions could allow a dynamically grown string array to become a row vector and then attempt to vertically concatenate it with a column vector. Version 0.1.2 fixes the orientation explicitly and normalises warning arrays before concatenation.

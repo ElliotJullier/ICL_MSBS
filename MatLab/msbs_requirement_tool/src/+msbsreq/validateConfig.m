@@ -90,11 +90,7 @@ mustBeMember(cfg.magnets.remanence_selection, ["nominal","minimum","maximum","ma
 if cfg.magnets.remanence_selection == "manual"
     localPositive(cfg.magnets.manual_Br_T, 'manual remanence');
 end
-gradePath=fullfile(projectRoot, 'data', 'magnet_grades.csv');
-if ~isfile(gradePath)
-    error('msbsreq:MissingMagnetDatabase', 'data/magnet_grades.csv is missing.');
-end
-gradeTable=readtable(gradePath,'TextType','string');
+gradeTable=msbsreq.loadMagnetGradeTable(projectRoot);
 if cfg.magnets.mode=="automatic"
     requestedGrades=string(cfg.magnets.automatic.grade);
 else
@@ -117,7 +113,7 @@ else
     end
 end
 for grade=requestedGrades(:).'
-    if ~any(strcmpi(gradeTable.grade,grade))
+    if ~any(strcmpi(gradeTable.("grade"),grade))
         error('msbsreq:UnknownMagnetGrade','Unknown magnet grade %s.',grade);
     end
 end
@@ -129,7 +125,7 @@ if ~isempty(cfg.mass.centre_of_mass_override_B_m) && ...
     error('msbsreq:InvalidCentreOfMass','Centre-of-mass override must be a finite 3-vector.');
 end
 if cfg.mass.shell_mass_factor < 1 && isempty(cfg.mass.total_mass_override_kg)
-    warnings(end+1) = "shell_mass_factor is below 1; the default total mass is below magnet mass.";
+    warnings(end+1,1) = "shell_mass_factor is below 1; the default total mass is below magnet mass.";
 end
 if ~isempty(cfg.mass.inertia_override_B_kgm2)
     I = double(cfg.mass.inertia_override_B_kgm2);
@@ -153,7 +149,7 @@ if cfg.motion.mode == "harmonic_single_frequency"
     localThreeVector(cfg.motion.harmonic.translation_amplitude_m,'translation amplitude');
     localThreeVector(cfg.motion.harmonic.angular_amplitude_rad,'angular amplitude');
     if max(abs(cfg.motion.harmonic.angular_amplitude_rad(:)))>deg2rad(10)
-        warnings(end+1)="Harmonic angular amplitude exceeds 10 degrees; use a validated time history for large or strongly coupled rotations.";
+        warnings(end+1,1)="Harmonic angular amplitude exceeds 10 degrees; use a validated time history for large or strongly coupled rotations.";
     end
 end
 localValidateMotionTables(cfg,rotationTolerance);
@@ -231,7 +227,7 @@ if strlength(string(cfg.output.root_folder))==0,error('msbsreq:InvalidOutputFold
 
 if cfg.geometry.sizing.mode == "blockage" && ...
         cfg.geometry.sizing.blockage_ratio > cfg.validation.blockage_advisory_limit
-    warnings(end+1) = "Requested nominal blockage exceeds the configured advisory limit.";
+    warnings(end+1,1) = "Requested nominal blockage exceeds the configured advisory limit.";
 end
 end
 

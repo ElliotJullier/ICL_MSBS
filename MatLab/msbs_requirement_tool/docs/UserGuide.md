@@ -142,7 +142,7 @@ The default hybrid model calculates each magnet cuboid explicitly. The remaining
 | `motion.time_history` | table | empty | Time-resolved kinematics and optional attitude. |
 | `motion.direct_required_wrench` | table | empty | Direct rigid-body inertial demand. |
 
-Harmonic angular displacement updates the body attitude at every phase. Angular velocity and acceleration are transformed into T and the moment demand includes both `I alpha` and `omega × (I omega)`.
+Harmonic translational and angular components are defined in the body frame. Harmonic angular displacement updates the body attitude at every phase; the translational acceleration, angular velocity, and angular acceleration are then rotated into T using that phase-specific attitude. Rotation preserves acceleration magnitude, but an individual tunnel-frame component can be smaller than the body-frame peak. The moment demand includes both `I alpha` and `omega × (I omega)`.
 
 Time-history rows may include absolute `yaw_deg`, `pitch_deg`, `roll_deg` or a cell containing `R_TB`. When omitted, the selected body-attitude case is retained.
 

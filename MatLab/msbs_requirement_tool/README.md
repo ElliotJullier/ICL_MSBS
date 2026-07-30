@@ -22,7 +22,7 @@ results = runAllTests();
 study = runStudy("case_minimal_example");
 ```
 
-The first delivered version has not been executed in MATLAB in the delivery environment. Run the test suite locally before relying on results.
+Version 0.1.2 incorporates corrections from the first two MATLAB runtime logs. MATLAB is still unavailable in the packaging environment, so run the complete test suite locally before relying on results.
 
 ## Documentation
 
@@ -31,6 +31,8 @@ The first delivered version has not been executed in MATLAB in the delivery envi
 - [Technical reference](docs/TechnicalReference.md)
 - [Troubleshooting](docs/Troubleshooting.md)
 - [Confirmed decision overrides](docs/DecisionOverrides.md)
+- [Updating from version 0.1.0](UPDATING_FROM_0.1.0.md)
+- [Updating from version 0.1.1](UPDATING_FROM_0.1.1.md)
 
 ## Project structure
 

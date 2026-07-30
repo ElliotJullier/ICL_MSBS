@@ -13,18 +13,20 @@ localPrintValidation(cfg,warnings);
 tunnel=msbsreq.buildTunnel(cfg);
 geometry=msbsreq.buildGeometry(cfg,tunnel);
 if geometry.nominal_blockage_ratio>cfg.validation.blockage_advisory_limit
-    warnings(end+1)="Actual nominal blockage exceeds the configured advisory limit.";
+    warnings(end+1,1)="Actual nominal blockage exceeds the configured advisory limit.";
 end
 [magnetSets,magnetWarnings]=msbsreq.buildMagnetSets(cfg,geometry,projectRoot);
-warnings=[warnings;magnetWarnings];
+warnings=[warnings(:);magnetWarnings(:)];
 
-massProperties=repmat(struct(),numel(magnetSets),1);
-for i=1:numel(magnetSets)
+massProperties=repmat( ...
+    msbsreq.calculateMassProperties(cfg,geometry,magnetSets(1)), ...
+    numel(magnetSets),1);
+for i=2:numel(magnetSets)
     massProperties(i)=msbsreq.calculateMassProperties(cfg,geometry,magnetSets(i));
 end
-warnings(end+1)="Mass properties use the hybrid explicit-magnet plus uniformly distributed shell approximation unless overridden.";
+warnings(end+1,1)="Mass properties use the hybrid explicit-magnet plus uniformly distributed shell approximation unless overridden.";
 if numel(cfg.frames.body_attitude_cases)>1 || cfg.motion.mode=="harmonic_single_frequency" || cfg.motion.mode=="time_history"
-    warnings(end+1)="Body attitude can vary while blockage is reported only at the nominal configured orientation.";
+    warnings(end+1,1)="Body attitude can vary while blockage is reported only at the nominal configured orientation.";
 end
 
 scenarios=msbsreq.buildScenarioTable(cfg);
@@ -57,7 +59,8 @@ for i=1:recordCount
 end
 results=msbsreq.buildResultTable(records);
 summary=msbsreq.summariseResults(results,cfg);
-warnings=[warnings;localNumericalWarnings(records,geometry,cfg)];
+numericalWarnings=localNumericalWarnings(records,geometry,cfg);
+warnings=[warnings(:);numericalWarnings(:)];
 warnings=unique(warnings(strlength(warnings)>0),'stable');
 
 metadata=localMetadata(projectRoot,inputInfo,cfg,height(scenarios),numel(magnetSets),numel(warnings));
@@ -99,21 +102,21 @@ for id=setIds(:).'
     conditions=arrayfun(@(r)r.map.condition_number,records(indices));
     residuals=arrayfun(@(r)r.solution.relative_scaled_residual,records(indices));
     if min(ranks)<6
-        warnings(end+1)="Magnet set "+id+" has magnetic-map rank below six; some wrench directions can be uncontrollable.";
+        warnings(end+1,1)="Magnet set "+id+" has magnetic-map rank below six; some wrench directions can be uncontrollable.";
     end
     if max(conditions)>cfg.magnetic.condition_warning_threshold
-        warnings(end+1)="Magnet set "+id+" has a poorly conditioned magnetic map under at least one attitude.";
+        warnings(end+1,1)="Magnet set "+id+" has a poorly conditioned magnetic map under at least one attitude.";
     end
     if max(residuals)>cfg.magnetic.acceptance_relative_residual
-        warnings(end+1)="Magnet set "+id+" exceeds the configured dimensionless residual-acceptance threshold.";
+        warnings(end+1,1)="Magnet set "+id+" exceeds the configured dimensionless residual-acceptance threshold.";
     end
     maxB=max(arrayfun(@(r)r.solution.B_local_max_norm_T,records(indices)));
     maxG=max(arrayfun(@(r)r.solution.G_frobenius_Tpm,records(indices)));
     if ~isempty(cfg.magnetic.advisory_B_max_T) && maxB>cfg.magnetic.advisory_B_max_T
-        warnings(end+1)="Magnet set "+id+" exceeds the user advisory field limit.";
+        warnings(end+1,1)="Magnet set "+id+" exceeds the user advisory field limit.";
     end
     if ~isempty(cfg.magnetic.advisory_G_max_Tpm) && maxG>cfg.magnetic.advisory_G_max_Tpm
-        warnings(end+1)="Magnet set "+id+" exceeds the user advisory gradient limit.";
+        warnings(end+1,1)="Magnet set "+id+" exceeds the user advisory gradient limit.";
     end
 end
 largeMagnet=false;
@@ -130,14 +133,14 @@ for iRecord=1:numel(records)
     end
 end
 if largeMagnet
-    warnings(end+1)="At least one magnet is large relative to the model characteristic length; the point-dipole approximation should be checked.";
+    warnings(end+1,1)="At least one magnet is large relative to the model characteristic length; the point-dipole approximation should be checked.";
 end
 for i=1:numel(records)
     positions=records(i).map.positions_T_m;
     if size(positions,2)>1
         separations=pdistEquivalent(positions);
         if max(separations)>geometry.characteristic_length_m
-            warnings(end+1)="At least one multi-magnet set spans more than one model characteristic length; a common first-order field may be inadequate.";
+            warnings(end+1,1)="At least one multi-magnet set spans more than one model characteristic length; a common first-order field may be inadequate.";
             break
         end
     end
