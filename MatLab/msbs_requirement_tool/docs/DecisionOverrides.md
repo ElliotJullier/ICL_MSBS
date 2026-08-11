@@ -13,3 +13,8 @@ These decisions supersede conflicting or ambiguous wording in the original imple
 9. Automatic magnet shrink remains an explicit user option and is zero in the supplied examples.
 10. N52 magnets from Magnet Store UK are anticipated. Delivered grade values are approximate, editable placeholders pending an exact part datasheet.
 11. No standalone software licence is imposed; the parent repository should define licensing.
+12. Six-DOF aerodynamic coefficient ranges are not Cartesian-expanded unless `combinations.allow_full_factorial_6dof=true`; correlated rows are the default recommended representation.
+13. Aerodynamic and kinematic time histories use exact timestamp matching in v0.2.0. No nearest-neighbour or hidden interpolation is performed.
+14. Direct aerodynamic wrench inputs remain physically distinct from direct inertial-demand inputs.
+15. Position/attitude aerodynamic sensitivity matrices are deferred until the perturbation vector and reference-state semantics are explicitly defined.
+16. The incremental wrench study reports magnetic-command increments around a baseline; it does not claim hardware-achievable force/moment resolution.

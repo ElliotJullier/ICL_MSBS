@@ -2,7 +2,7 @@
 
 A modular MATLAB framework for converting wind-tunnel experiment definitions into required applied magnetic field and first-order field-gradient requirements for one or more permanent magnets.
 
-The tool combines aerodynamic, gravity, prescribed rigid-body inertial, and optional user-defined loads in a common tunnel frame. It evaluates simultaneous physical scenarios, solves the source-free first-order magnetic requirement, reports uncontrollable residuals, compares magnet arrangements, and exports reproducible result packages.
+The tool combines aerodynamic, gravity, prescribed rigid-body inertial, and optional user-defined loads in a common tunnel frame. Aerodynamics may be supplied as the legacy three coefficients, a complete six-DOF coefficient vector, dimensional wrench cases, or an exactly synchronized wrench time history. It evaluates simultaneous physical scenarios, solves the source-free first-order magnetic requirement, reports uncontrollable residuals, compares magnet arrangements, and exports reproducible result packages.
 
 It does **not** design coils, calculate coil currents or power, simulate a finite magnet volume, or design a controller.
 
@@ -22,7 +22,7 @@ results = runAllTests();
 study = runStudy("case_minimal_example");
 ```
 
-Version 0.1.2 incorporates corrections from the first two MATLAB runtime logs. MATLAB is still unavailable in the packaging environment, so run the complete test suite locally before relying on results.
+Version 0.2.0 adds six-DOF aerodynamic and incremental magnetic-requirement inputs while preserving the validated legacy path. MATLAB is unavailable in the packaging environment, so run the complete test suite locally before relying on this release.
 
 ## Documentation
 
@@ -31,8 +31,6 @@ Version 0.1.2 incorporates corrections from the first two MATLAB runtime logs. M
 - [Technical reference](docs/TechnicalReference.md)
 - [Troubleshooting](docs/Troubleshooting.md)
 - [Confirmed decision overrides](docs/DecisionOverrides.md)
-- [Updating from version 0.1.0](UPDATING_FROM_0.1.0.md)
-- [Updating from version 0.1.1](UPDATING_FROM_0.1.1.md)
 
 ## Project structure
 

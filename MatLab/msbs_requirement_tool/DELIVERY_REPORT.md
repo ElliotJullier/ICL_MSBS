@@ -1,15 +1,26 @@
-# Corrective delivery report — version 0.1.2
+# Feature delivery report — version 0.2.0
 
 ## Basis
 
-This release responds to the second local MATLAB test run. Version 0.1.1 reduced the suite to 38 passing tests and four incomplete failures.
+This release implements the supplied aerodynamic-wrench extension specification, with conservative choices where the proposed interface was ambiguous.
 
-## Corrections
+## Implemented
 
-1. Warning arrays are now maintained as column string arrays and normalised before vertical concatenation.
-2. The hybrid centre-of-mass test now applies a 10% automatic magnet shrink before a 10 mm centre offset, so the test magnet remains inside the spherical geometry proxy.
-3. Documentation now clarifies that the unified `.patch` file is sufficient and that helper patch artifacts may be deleted after a successful commit.
+1. Backward-compatible `legacy_3coeff` aerodynamic mode.
+2. Six-DOF `[CD CY CL Cl Cm Cn]` coefficient mode using reference dimensions `[b c b]`.
+3. Correlated user-defined six-DOF scenarios and metadata passthrough.
+4. Direct dimensional aerodynamic wrench cases in W/T/B frames with reference-point shifting.
+5. Aerodynamic wrench time histories that coexist with motion time histories using exact timestamp matching.
+6. Baseline-plus-perturbation force/moment requirement studies with independent linear-increment consistency checks.
+7. Updated template, user guide, technical reference, changelog, exports, and automated tests.
+
+## Deliberate decisions
+
+- Six-coefficient extrema are not expanded into a Cartesian product unless `combinations.allow_full_factorial_6dof=true`.
+- Time histories are not silently interpolated; v0.2.0 requires exact timestamps within a configurable tolerance.
+- Position/attitude aerodynamic sensitivity matrices are deferred because the supplied proposal does not yet define the perturbation vector/reference state to which the matrices should be applied.
+- The optional user-supplied aerodynamic model function remains a later extension, as proposed.
 
 ## Runtime status
 
-MATLAB and GNU Octave are unavailable in the packaging environment. Version 0.1.2 has therefore been statically audited but not runtime-certified here. Run `runAllTests` locally and provide the complete output if any failure remains.
+MATLAB and GNU Octave are unavailable in the packaging environment. Static checks and source-level audits were performed, but the project owner's local `runAllTests()` remains the authoritative runtime validation.

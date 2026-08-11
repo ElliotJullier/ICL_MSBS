@@ -377,3 +377,112 @@ Set ranking first excludes any set whose worst residual exceeds the threshold. A
 ## 9. Model-validity limits
 
 The calculation assumes point dipoles in a common externally applied first-order field in a current-free region. It excludes magnet self-field, magnet interactions, higher spatial derivatives, finite-volume force integration, saturation, demagnetisation, coil design, tunnel blockage corrections, CFD, flexible-body dynamics, and controller design.
+
+## 10. Aerodynamic wrench extension (v0.2.0)
+
+### 10.1 Aerodynamic source mode
+
+`aero.mode` selects how the external aerodynamic wrench is specified:
+
+- `legacy_3coeff` — backward-compatible `CD`, `CL`, and `Cm` behaviour.
+- `coefficients_6dof` — complete `[CD CY CL Cl Cm Cn]` coefficient input.
+- `direct_wrench_cases` — dimensional aerodynamic force/moment rows.
+- `wrench_time_history` — dimensional aerodynamic wrench indexed by time.
+
+The coefficient fields are `aero.CD`, `aero.CY`, `aero.CL`, `aero.Cl`, `aero.Cm`, and `aero.Cn`. In `legacy_3coeff`, `CY`, `Cl`, and `Cn` are deliberately zero regardless of any unused values present in the configuration.
+
+The existing wind-axis convention is preserved:
+
+```text
+F_a,W = q S [CD; CY; CL]
+M_a,R,W = q S [b Cl; c Cm; b Cn]
+```
+
+`geometry.aero_reference_length.mode` / `geometry.aero_reference_length.value_m` define the pitch reference `c`. `geometry.aero_reference_span.mode` / `geometry.aero_reference_span.value_m` define the roll/yaw reference `b`.
+The `[b,c,b]` convention is common but not universal across bluff-body literature. `S`, `b`, `c`, and coefficient signs must match the source definition. If a paper/CFD dataset already supplies dimensional forces and moments, `direct_wrench_cases` avoids coefficient-normalisation ambiguity.
+
+With `geometry.aero_reference_span.mode="characteristic_default"`, primitive geometries use the body-y outer extent as `b`, except a sphere, which uses its diameter. A custom geometry in six-coefficient mode must provide `geometry.sizing.custom.reference_span_m` or use manual span mode; the program does not silently set `b=c` for a custom/wing-like shape.
+
+### 10.2 Correlated coefficient rows and metadata
+
+For physically correlated six-axis aerodynamic data, set `combinations.strategy="user_defined"` and provide rows in `combinations.user_scenarios`. A row may contain `speed_mps`, `CD`, `CY`, `CL`, `Cl`, `Cm`, `Cn`, `body_attitude_case`, `wind_orientation_case`, and `motion_case`.
+If six-DOF coefficient mode is combined with more than one motion case, `motion_case` is required in every correlated row; the program will not silently pair all aerodynamic rows with the first motion state.
+
+Additional scalar numeric, logical, or text columns are treated as traceability metadata and copied to the scenario/result tables without entering the governing equations. Typical examples are `Re`, `St`, `A_over_D`, `U_reduced`, `KC`, `spin_ratio`, `reduced_frequency`, `alpha_deg`, `beta_deg`, and `source_id`.
+
+Six-coefficient ranges are **not** expanded as a Cartesian product by default. `combinations.allow_full_factorial_6dof` defaults to `false`. Set it to `true` only when the full Cartesian product is a deliberate screening study.
+
+### 10.3 Direct aerodynamic wrench cases
+
+`aero.direct_wrench_cases` is used when `aero.mode="direct_wrench_cases"`. Required numeric columns are:
+
+```text
+Fx_N Fy_N Fz_N Mx_Nm My_Nm Mz_Nm
+```
+
+Optional columns include `case_name`, `frame`, `reference_point_B_m`, `speed_mps`, coefficient values for traceability, named frame/motion cases, and metadata. `frame` may be `W`, `T`, or `B` and defaults to `T`. `reference_point_B_m` is always a body-frame point stored as a cell-column of 3-vectors; if omitted, `geometry.aero_reference_point_B_m` is used.
+
+The direct wrench is an **external aerodynamic wrench**. It is not the magnetic requirement and is distinct from the existing direct inertial-demand motion mode.
+
+When more than one motion case exists, a direct aerodynamic row must specify `motion_case`; the program refuses to create an implicit aerodynamic-motion Cartesian product.
+
+### 10.4 Aerodynamic wrench time history
+
+`aero.wrench_time_history` is used when `aero.mode="wrench_time_history"`. Required columns are:
+
+```text
+time_s Fx_N Fy_N Fz_N Mx_Nm My_Nm Mz_Nm
+```
+
+The same optional `frame`, `reference_point_B_m`, coefficient-traceability, and metadata columns may be included.
+
+Aerodynamic time history may coexist with `motion.time_history`. Version 0.2.0 intentionally implements **exact timestamp synchronisation only**. `aero.time_sync.mode` is therefore `exact`, and `aero.time_sync.tolerance_s` defines the permitted floating-point mismatch. The two histories must have equal row count and matching timestamps. There is no nearest-neighbour matching and no silent interpolation or extrapolation.
+
+The output retains aerodynamic, gravity, other-load, and inertial contributions separately before reporting the required magnetic wrench.
+
+### 10.5 Incremental force/moment requirement study
+
+`requirement_resolution.enable` controls the incremental requirement calculation. When enabled, `requirement_resolution.delta_wrench_cases` requires:
+
+```text
+dFx_N dFy_N dFz_N dMx_Nm dMy_Nm dMz_Nm
+```
+
+Optional columns are `name` and `frame` (`W`, `T`, or `B`, default `T`). The perturbation wrench is interpreted about the model centre of mass.
+
+For every baseline scenario and magnet set, the program calculates:
+
+```text
+x0      = solution(w0)
+x1      = solution(w0 + delta_w)
+delta_x = x1 - x0
+```
+
+and independently solves the linear incremental problem `A delta_x_direct = delta_w` using the same study-wide force/moment scales as the main solution. `resolution_results.csv` reports component-wise `delta_B0`, `delta_G`, their norms, the incremental residual, and the difference between the two incremental calculations.
+
+This is a **magnetic command/reproducibility requirement**, not hardware-achievable resolution. No coil, power amplifier, DAC, sensor-noise, or controller model is present. The numerical lower bounds `magnetic.minimum_force_scale_N` and `magnetic.minimum_moment_scale_Nm` retain their original solver-scaling meaning and are not physical resolution specifications.
+
+### 10.6 Deliberately deferred interfaces
+
+The proposed position/attitude sensitivity matrices are not applied automatically in v0.2.0. A matrix such as `dW_dr` or `dW_dtheta` is incomplete without an explicit perturbation vector and a clearly defined reference state. Applying it to actual model displacement, commanded pose error, and measurement noise would represent three different physical problems. These semantics should be fixed before adding the interface.
+
+Likewise, a user-supplied aerodynamic model function is a later extension. Tables are retained as the first reproducible and testable interface.
+### 10.7 Actual jitter, measurement noise, and command error
+
+The program treats **actual model motion** as physical kinematics. Actual translational or angular jitter may therefore create inertial demand. Camera/pose measurement noise is different: it changes the estimated state available to a controller, but it does not itself create `m*a` or `I*alpha`. Likewise, actuator/command error is the difference between requested and realised magnetic wrench and is not represented by differentiating pose noise.
+
+For a deliberately prescribed harmonic **actual** displacement amplitude `delta_A` at frequency `f`, the peak inertial diagnostic is
+
+```text
+delta_a_peak = (2*pi*f)^2 delta_A
+delta_F_inertial_peak = m delta_a_peak
+```
+
+For a small harmonic **actual** angular displacement amplitude `delta_theta`,
+
+```text
+delta_alpha_peak = (2*pi*f)^2 delta_theta
+delta_M_inertial_peak ~= I delta_alpha_peak
+```
+
+These are physical diagnostics, not a rule for converting camera resolution/noise into force. Measurement-noise propagation belongs in a future estimator/controller model.

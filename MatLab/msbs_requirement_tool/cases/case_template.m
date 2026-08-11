@@ -58,8 +58,10 @@ cfg.geometry.sizing.blockage_ratio = 0.10; % fraction, not percent
 % cfg.geometry.sizing.custom.plot_faces = [...];        % optional faces
 cfg.geometry.aero_reference_area.mode = "projected_nominal"; % or manual
 % cfg.geometry.aero_reference_area.value_m2 = 0.01;
-cfg.geometry.aero_reference_length.mode = "characteristic_default"; % or manual
+cfg.geometry.aero_reference_length.mode = "characteristic_default"; % pitch reference c, or manual
 % cfg.geometry.aero_reference_length.value_m = 0.20;
+cfg.geometry.aero_reference_span.mode = "characteristic_default"; % roll/yaw reference b, or manual
+% cfg.geometry.aero_reference_span.value_m = 0.30;
 cfg.geometry.aero_reference_point_B_m = [0;0;0];
 
 %% USER INPUT 5 — Automatic magnet
@@ -97,10 +99,30 @@ cfg.mass.total_mass_override_kg = [];
 cfg.mass.centre_of_mass_override_B_m = [];
 cfg.mass.inertia_override_B_kgm2 = [];
 
-%% USER INPUT 7 — Aerodynamic coefficients
+%% USER INPUT 7 — Aerodynamics
+cfg.aero.mode = "legacy_3coeff"; % legacy_3coeff, coefficients_6dof, direct_wrench_cases, wrench_time_history
 cfg.aero.CD = msbsreq.rangeSpec(0.50, 0.05, "absolute");
+cfg.aero.CY = msbsreq.rangeSpec(0.00, [], "absolute");
 cfg.aero.CL = msbsreq.rangeSpec(0.00, [], "absolute");
+cfg.aero.Cl = msbsreq.rangeSpec(0.00, [], "absolute");
 cfg.aero.Cm = msbsreq.rangeSpec(0.00, [], "absolute");
+cfg.aero.Cn = msbsreq.rangeSpec(0.00, [], "absolute");
+% Six-DOF coefficient mode uses [CD CY CL Cl Cm Cn] and moment references [b c b].
+% For physically correlated coefficients prefer combinations.strategy="user_defined".
+%
+% Direct aerodynamic wrench example (external aerodynamic wrench, not inertia):
+% cfg.aero.mode = "direct_wrench_cases";
+% p = {[0;0;0]};
+% cfg.aero.direct_wrench_cases = table("CFD_case",10,0,-2,0,0.1,0,"T",p,12345,"CFD_A", ...
+%   'VariableNames',{'case_name','Fx_N','Fy_N','Fz_N','Mx_Nm','My_Nm','Mz_Nm', ...
+%   'frame','reference_point_B_m','Re','source_id'});
+%
+% Aerodynamic wrench time history. When motion.mode="time_history", time_s must match exactly
+% within cfg.aero.time_sync.tolerance_s; no silent interpolation is performed.
+% cfg.aero.mode = "wrench_time_history";
+% cfg.aero.wrench_time_history = table(...);
+cfg.aero.time_sync.mode = "exact";
+cfg.aero.time_sync.tolerance_s = 1e-9;
 
 %% USER INPUT 8 — Motion
 cfg.motion.mode = "none"; % none, direct_kinematics_cases, harmonic_single_frequency, time_history, direct_required_wrench
@@ -136,6 +158,7 @@ cfg.additional_wrenches = table();
 cfg.combinations.strategy = "full_factorial"; % or user_defined
 cfg.combinations.include_nominal_case = true;
 cfg.combinations.max_cases = 4096;
+cfg.combinations.allow_full_factorial_6dof = false; % set true only to deliberately expand six coefficient ranges
 % Correlated user-defined example (omitted columns use nominal/first cases):
 % cfg.combinations.strategy = "user_defined";
 % cfg.combinations.user_scenarios = table(["cruise";"pitch_peak"],[30;25],[0.5;0.55], ...
@@ -155,12 +178,21 @@ cfg.magnetic.condition_warning_threshold = 1e10;
 cfg.magnetic.minimum_force_scale_N = 1e-9;
 cfg.magnetic.minimum_moment_scale_Nm = 1e-9;
 
-%% USER INPUT 12 — Validation warnings
+%% USER INPUT 12 — Incremental force/moment requirement study
+cfg.requirement_resolution.enable = false;
+cfg.requirement_resolution.delta_wrench_cases = table();
+% cfg.requirement_resolution.enable = true;
+% cfg.requirement_resolution.delta_wrench_cases = table("1mN_x",1e-3,0,0,0,0,0,"T", ...
+%   'VariableNames',{'name','dFx_N','dFy_N','dFz_N','dMx_Nm','dMy_Nm','dMz_Nm','frame'});
+% This reports the incremental B0/G needed about every loaded baseline. It is
+% a magnetic-command requirement, not a claim of hardware-achievable resolution.
+
+%% USER INPUT 13 — Validation warnings
 cfg.validation.rotation_tolerance = 1e-10;
 cfg.validation.gradient_tolerance = 1e-10;
 cfg.validation.blockage_advisory_limit = 0.15;
 
-%% USER INPUT 13 — Outputs and figures
+%% USER INPUT 14 — Outputs and figures
 cfg.visualisation.enable = true;
 cfg.visualisation.plot_worst_case = true;
 cfg.visualisation.vector_scale_mode = "normalised";

@@ -58,6 +58,7 @@ for i=1:recordCount
         records(i).loads.required_magnetic_wrench_T,scales,cfg);
 end
 results=msbsreq.buildResultTable(records);
+resolutionResults=msbsreq.buildResolutionTable(records,scales,cfg);
 summary=msbsreq.summariseResults(results,cfg);
 numericalWarnings=localNumericalWarnings(records,geometry,cfg);
 warnings=[warnings(:);numericalWarnings(:)];
@@ -75,6 +76,7 @@ study.magnet_sets=magnetSets;
 study.scenarios=scenarios;
 study.records=records;
 study.results=results;
+study.resolution_results=resolutionResults;
 study.summary=summary;
 study.warnings=warnings;
 study.output_folder="";
@@ -188,6 +190,7 @@ fprintf('  Case: %s\n',cfg.meta.case_id);
 fprintf('  Geometry: %s (%s sizing)\n',cfg.geometry.type,cfg.geometry.sizing.mode);
 fprintf('  Magnet mode: %s\n',cfg.magnets.mode);
 fprintf('  Motion mode: %s\n',cfg.motion.mode);
+fprintf('  Aerodynamic mode: %s\n',cfg.aero.mode);
 fprintf('  Relative residual acceptance threshold: %.3g (dimensionless)\n', ...
     cfg.magnetic.acceptance_relative_residual);
 fprintf('  Initial validation warnings: %d\n\n',numel(warnings));
@@ -206,6 +209,9 @@ fprintf('  Magnet volume, first set: %.6g m^3\n',sum([study.magnet_sets(1).magne
 fprintf('  Dipole magnitude, first set: %.6g A m^2\n',sum([study.magnet_sets(1).magnets.dipole_moment_magnitude_Am2]));
 fprintf('  Worst required force: %.6g N\n',max(S.maximum_force_norm_N));
 fprintf('  Worst required moment: %.6g N m\n',max(S.maximum_moment_norm_Nm));
+if study.config_resolved.requirement_resolution.enable
+    fprintf('  Incremental resolution rows: %d\n',height(study.resolution_results));
+end
 for i=1:height(S)
     fprintf('  %s: max local B %.6g T, max ||G||F %.6g T/m, max relative residual %.3g\n', ...
         S.magnet_set_name(i),S.maximum_local_B_norm_T(i),S.maximum_G_frobenius_Tpm(i), ...

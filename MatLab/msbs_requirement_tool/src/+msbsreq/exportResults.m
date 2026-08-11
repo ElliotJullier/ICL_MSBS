@@ -42,6 +42,9 @@ localWriteJson(fullfile(outputFolder,'config_resolved.json'),study.config_resolv
 localWriteJson(fullfile(outputFolder,'run_metadata.json'),study.metadata);
 writetable(study.results,fullfile(outputFolder,'scenario_results.csv'));
 writetable(study.summary.magnet_set_summary,fullfile(outputFolder,'magnet_set_summary.csv'));
+if study.config_resolved.requirement_resolution.enable
+    writetable(study.resolution_results,fullfile(outputFolder,'resolution_results.csv'));
+end
 
 study.output_folder=string(outputFolder); %#ok<NASGU>
 save(fullfile(outputFolder,'results_full.mat'),'study','-v7.3');

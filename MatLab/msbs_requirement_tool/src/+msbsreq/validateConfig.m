@@ -28,9 +28,16 @@ else
 end
 
 localValidateRange(cfg.tunnel.speed, false, 'tunnel speed');
+mustBeMember(cfg.aero.mode,["legacy_3coeff","coefficients_6dof", ...
+    "direct_wrench_cases","wrench_time_history"]);
 localValidateRange(cfg.aero.CD, true, 'CD');
+localValidateRange(cfg.aero.CY, true, 'CY');
 localValidateRange(cfg.aero.CL, true, 'CL');
+localValidateRange(cfg.aero.Cl, true, 'Cl');
 localValidateRange(cfg.aero.Cm, true, 'Cm');
+localValidateRange(cfg.aero.Cn, true, 'Cn');
+mustBeMember(cfg.aero.time_sync.mode,["exact"]);
+localPositive(cfg.aero.time_sync.tolerance_s,'aerodynamic time synchronization tolerance');
 
 localPositive(rotationTolerance,'rotation tolerance');
 localPositive(cfg.validation.gradient_tolerance,'gradient tolerance');
@@ -51,6 +58,10 @@ mustBeMember(cfg.geometry.type, ["cuboid","sphere","ellipsoid","cylinder","flat_
 mustBeMember(cfg.geometry.sizing.mode, ["absolute","blockage"]);
 mustBeMember(lower(string(cfg.geometry.aero_reference_area.mode)),["projected_nominal","manual"]);
 mustBeMember(lower(string(cfg.geometry.aero_reference_length.mode)),["characteristic_default","manual"]);
+mustBeMember(lower(string(cfg.geometry.aero_reference_span.mode)),["characteristic_default","manual"]);
+if cfg.geometry.aero_reference_span.mode=="manual"
+    localPositive(cfg.geometry.aero_reference_span.value_m,'aerodynamic reference span');
+end
 if cfg.geometry.type=="cylinder"
     mustBeMember(lower(string(cfg.geometry.sizing.cylinder_axis)),["x","y","z"]);
 end
@@ -153,12 +164,21 @@ if cfg.motion.mode == "harmonic_single_frequency"
     end
 end
 localValidateMotionTables(cfg,rotationTolerance);
+localValidateAerodynamicTables(cfg);
+if cfg.aero.mode=="wrench_time_history" && cfg.motion.mode=="time_history"
+    localValidateExactTimeSync(cfg);
+elseif cfg.aero.mode=="wrench_time_history" && ~ismember(cfg.motion.mode,["none","time_history"])
+    error('msbsreq:UnsupportedTimeHistoryCombination', ...
+        ['Aerodynamic wrench_time_history currently supports motion.mode="none" ', ...
+         'or "time_history" only. Use matching time-history rows for correlated unsteady motion.']);
+end
 
 mustBeMember(cfg.combinations.strategy, ["full_factorial","user_defined"]);
 if cfg.combinations.max_cases < 1 || cfg.combinations.max_cases ~= round(cfg.combinations.max_cases)
     error('msbsreq:InvalidCaseLimit', 'max_cases must be a positive integer.');
 end
-if cfg.combinations.strategy == "user_defined"
+if cfg.combinations.strategy == "user_defined" && ...
+        ismember(cfg.aero.mode,["legacy_3coeff","coefficients_6dof"])
     T=cfg.combinations.user_scenarios;
     if ~istable(T) || isempty(T)
         error('msbsreq:EmptyScenarioSet', 'user_defined strategy requires a nonempty table.');
@@ -169,7 +189,7 @@ if cfg.combinations.strategy == "user_defined"
     if any(strlength(string(T.scenario_name))==0)
         error('msbsreq:MissingScenarioName','Every user-defined scenario requires a nonempty name.');
     end
-    numericColumns={'speed_mps','CD','CL','Cm'};
+    numericColumns={'speed_mps','CD','CY','CL','Cl','Cm','Cn'};
     for iColumn=1:numel(numericColumns)
         name=numericColumns{iColumn};
         if ismember(name,T.Properties.VariableNames)
@@ -185,6 +205,21 @@ if cfg.combinations.strategy == "user_defined"
         localFiniteColumn(T.(name),"user scenario "+name);
     end
 end
+if cfg.aero.mode=="coefficients_6dof" && cfg.combinations.strategy=="full_factorial" && ...
+        ~cfg.combinations.allow_full_factorial_6dof
+    varied = cfg.aero.CD.hasVariation || cfg.aero.CY.hasVariation || ...
+        cfg.aero.CL.hasVariation || cfg.aero.Cl.hasVariation || ...
+        cfg.aero.Cm.hasVariation || cfg.aero.Cn.hasVariation;
+    if varied
+        error('msbsreq:Explicit6DOFFactorialRequired', ...
+            ['Six-DOF coefficient ranges are not expanded as a Cartesian product by default. ', ...
+             'Use correlated user_scenarios, or deliberately set ', ...
+             'combinations.allow_full_factorial_6dof=true.']);
+    end
+end
+if ~islogical(cfg.combinations.allow_full_factorial_6dof) || ~isscalar(cfg.combinations.allow_full_factorial_6dof)
+    error('msbsreq:InvalidFactorialFlag','allow_full_factorial_6dof must be a logical scalar.');
+end
 
 mustBeMember(cfg.magnetic.model,["source_free_first_order"]);
 localPositive(cfg.magnetic.field_scale_T, 'field scale');
@@ -198,6 +233,13 @@ threshold = cfg.magnetic.acceptance_relative_residual;
 if ~(isscalar(threshold) && isfinite(threshold) && threshold >= 0 && threshold < 1)
     error('msbsreq:InvalidResidualThreshold', ...
         'acceptance_relative_residual must be dimensionless and in [0,1).');
+end
+
+if ~islogical(cfg.requirement_resolution.enable) || ~isscalar(cfg.requirement_resolution.enable)
+    error('msbsreq:InvalidResolutionEnable','requirement_resolution.enable must be a logical scalar.');
+end
+if cfg.requirement_resolution.enable
+    localValidateResolutionTable(cfg.requirement_resolution.delta_wrench_cases);
 end
 
 if ~isempty(cfg.additional_wrenches)
@@ -228,6 +270,83 @@ if strlength(string(cfg.output.root_folder))==0,error('msbsreq:InvalidOutputFold
 if cfg.geometry.sizing.mode == "blockage" && ...
         cfg.geometry.sizing.blockage_ratio > cfg.validation.blockage_advisory_limit
     warnings(end+1,1) = "Requested nominal blockage exceeds the configured advisory limit.";
+end
+end
+
+
+function localValidateAerodynamicTables(cfg)
+switch cfg.aero.mode
+    case "direct_wrench_cases"
+        localValidateAeroWrenchTable(cfg.aero.direct_wrench_cases,false);
+    case "wrench_time_history"
+        localValidateAeroWrenchTable(cfg.aero.wrench_time_history,true);
+end
+end
+
+function localValidateAeroWrenchTable(T, requireTime)
+if ~istable(T) || isempty(T)
+    error('msbsreq:EmptyAeroWrenchTable','Selected aerodynamic wrench table must be a nonempty MATLAB table.');
+end
+required={'Fx_N','Fy_N','Fz_N','Mx_Nm','My_Nm','Mz_Nm'};
+if requireTime, required=[{'time_s'},required]; end
+if ~all(ismember(required,T.Properties.VariableNames))
+    error('msbsreq:MissingAeroWrenchColumns','Aerodynamic wrench table is missing required columns.');
+end
+for name=required
+    localFiniteColumn(T.(name{1}),"aerodynamic wrench "+name{1});
+end
+if requireTime
+    if any(diff(T.time_s)<=0)
+        error('msbsreq:InvalidAeroTime','Aerodynamic time_s values must be strictly increasing.');
+    end
+end
+if ismember('frame',T.Properties.VariableNames)
+    for i=1:height(T)
+        mustBeMember(upper(string(T.frame(i))),["W","T","B"]);
+    end
+end
+if ismember('reference_point_B_m',T.Properties.VariableNames)
+    if ~iscell(T.reference_point_B_m)
+        error('msbsreq:InvalidAeroReferencePoint','reference_point_B_m must be a cell column of 3-vectors.');
+    end
+    for i=1:height(T)
+        point=T.reference_point_B_m{i};
+        if numel(point)~=3 || any(~isfinite(point(:)))
+            error('msbsreq:InvalidAeroReferencePoint','Each aerodynamic reference point must be a finite 3-vector.');
+        end
+    end
+end
+end
+
+function localValidateExactTimeSync(cfg)
+Ta=cfg.aero.wrench_time_history;
+Tm=cfg.motion.time_history;
+if ~ismember('time_s',Tm.Properties.VariableNames)
+    error('msbsreq:MissingMotionTime','motion.time_history requires time_s when combined with aerodynamic wrench_time_history.');
+end
+if height(Ta)~=height(Tm)
+    error('msbsreq:TimeHistoryMismatch','Aerodynamic and motion time histories must contain the same number of rows in exact mode.');
+end
+if any(abs(Ta.time_s-Tm.time_s)>cfg.aero.time_sync.tolerance_s)
+    error('msbsreq:TimeHistoryMismatch','Aerodynamic and motion timestamps do not match within aero.time_sync.tolerance_s.');
+end
+end
+
+function localValidateResolutionTable(T)
+if ~istable(T) || isempty(T)
+    error('msbsreq:EmptyResolutionTable','Enabled requirement_resolution requires a nonempty delta_wrench_cases table.');
+end
+required={'dFx_N','dFy_N','dFz_N','dMx_Nm','dMy_Nm','dMz_Nm'};
+if ~all(ismember(required,T.Properties.VariableNames))
+    error('msbsreq:MissingResolutionColumns','Resolution table is missing one or more delta-wrench columns.');
+end
+for i=1:numel(required)
+    localFiniteColumn(T.(required{i}),"resolution "+required{i});
+end
+if ismember('frame',T.Properties.VariableNames)
+    for i=1:height(T)
+        mustBeMember(upper(string(T.frame(i))),["W","T","B"]);
+    end
 end
 end
 

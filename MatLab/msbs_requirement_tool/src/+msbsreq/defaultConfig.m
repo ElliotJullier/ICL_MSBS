@@ -44,6 +44,8 @@ cfg.geometry.aero_reference_area.mode = "projected_nominal";
 cfg.geometry.aero_reference_area.value_m2 = [];
 cfg.geometry.aero_reference_length.mode = "characteristic_default";
 cfg.geometry.aero_reference_length.value_m = [];
+cfg.geometry.aero_reference_span.mode = "characteristic_default";
+cfg.geometry.aero_reference_span.value_m = [];
 cfg.geometry.aero_reference_point_B_m = [0;0;0];
 cfg.geometry.custom_plot_vertices_B_m = [];
 cfg.geometry.custom_plot_faces = [];
@@ -65,9 +67,17 @@ cfg.mass.total_mass_override_kg = [];
 cfg.mass.centre_of_mass_override_B_m = [];
 cfg.mass.inertia_override_B_kgm2 = [];
 
+cfg.aero.mode = "legacy_3coeff";
 cfg.aero.CD = msbsreq.rangeSpec(0, [], "absolute");
+cfg.aero.CY = msbsreq.rangeSpec(0, [], "absolute");
 cfg.aero.CL = msbsreq.rangeSpec(0, [], "absolute");
+cfg.aero.Cl = msbsreq.rangeSpec(0, [], "absolute");
 cfg.aero.Cm = msbsreq.rangeSpec(0, [], "absolute");
+cfg.aero.Cn = msbsreq.rangeSpec(0, [], "absolute");
+cfg.aero.direct_wrench_cases = table();
+cfg.aero.wrench_time_history = table();
+cfg.aero.time_sync.mode = "exact";
+cfg.aero.time_sync.tolerance_s = 1e-9;
 
 cfg.motion.mode = "none";
 cfg.motion.direct_kinematics_cases = table();
@@ -86,6 +96,7 @@ cfg.combinations.strategy = "full_factorial";
 cfg.combinations.include_nominal_case = true;
 cfg.combinations.max_cases = 4096;
 cfg.combinations.user_scenarios = table();
+cfg.combinations.allow_full_factorial_6dof = false;
 
 cfg.magnetic.model = "source_free_first_order";
 cfg.magnetic.field_scale_T = 0.10;
@@ -96,6 +107,9 @@ cfg.magnetic.advisory_B_max_T = [];
 cfg.magnetic.advisory_G_max_Tpm = [];
 cfg.magnetic.minimum_force_scale_N = 1e-9;
 cfg.magnetic.minimum_moment_scale_Nm = 1e-9;
+
+cfg.requirement_resolution.enable = false;
+cfg.requirement_resolution.delta_wrench_cases = table();
 
 cfg.validation.rotation_tolerance = 1e-10;
 cfg.validation.gradient_tolerance = 1e-10;

@@ -15,8 +15,12 @@ for i=1:n
     row.scenario_name=s.scenario_name;
     row.magnet_set_id=rec.magnet_set.id;
     row.magnet_set_name=rec.magnet_set.name;
-    row.speed_mps=s.speed_mps; row.rho_kgm3=s.rho_kgm3;
-    row.CD=s.CD; row.CL=s.CL; row.Cm=s.Cm;
+    row.aero_source_mode=s.aero_source_mode;row.aero_input_frame=s.aero_input_frame;
+    row.speed_mps=s.speed_mps; row.rho_kgm3=s.rho_kgm3; row.time_s=s.time_s;
+    row.CD=s.CD;row.CY=s.CY;row.CL=s.CL;row.Cl=s.Cl;row.Cm=s.Cm;row.Cn=s.Cn;
+    row.aero_ref_x_B_m=s.aero_reference_point_B_m(1);
+    row.aero_ref_y_B_m=s.aero_reference_point_B_m(2);
+    row.aero_ref_z_B_m=s.aero_reference_point_B_m(3);
     row.motion_case=s.motion_case; row.body_attitude_case=s.body_attitude_case;
     row.wind_orientation_case=s.wind_orientation_case;
     row.Fx_aero_N=aero(1);row.Fy_aero_N=aero(2);row.Fz_aero_N=aero(3);
@@ -44,12 +48,65 @@ for i=1:n
     rows(i)=row;
 end
 resultTable=struct2table(rows,'AsArray',true);
+resultTable=localAppendMetadata(resultTable,records);
+end
+
+
+function T=localAppendMetadata(T,records)
+keys=strings(0,1);
+for i=1:numel(records)
+    if isfield(records(i).loads.scenario,'metadata')
+        keys=unique([keys;string(fieldnames(records(i).loads.scenario.metadata))],'stable');
+    end
+end
+for key=keys(:).'
+    if ismember(key,T.Properties.VariableNames),continue,end
+    values=cell(numel(records),1);
+    for i=1:numel(records)
+        meta=records(i).loads.scenario.metadata;
+        field=char(key);if isfield(meta,field),values{i}=meta.(field);else,values{i}=[];end
+    end
+    provided=~cellfun(@isempty,values);
+    numericScalar=cellfun(@(v)isempty(v)||(isnumeric(v)&&isscalar(v)),values);
+    if all(numericScalar) && any(provided)
+        numericValues=nan(numel(values),1);
+        for i=1:numel(values)
+            if provided(i),numericValues(i)=double(values{i});end
+        end
+        T.(char(key))=numericValues;
+    elseif all(cellfun(@(v)islogical(v)&&isscalar(v),values))
+        T.(char(key))=cellfun(@logical,values);
+    else
+        text=strings(numel(values),1);
+        for i=1:numel(values)
+            if isempty(values{i}),text(i)="";else,text(i)=localMetadataText(values{i});end
+        end
+        T.(char(key))=text;
+    end
+end
+end
+
+
+function text=localMetadataText(value)
+if isnumeric(value) || islogical(value)
+    if isscalar(value),text=string(value);else,text=string(mat2str(value));end
+elseif ischar(value)
+    text=string(value);
+elseif isstring(value) || iscategorical(value)
+    value=string(value);
+    if isscalar(value),text=value;else,text=strjoin(value(:).',"|");end
+else
+    text=string(value);
+    if ~isscalar(text),text=strjoin(text(:).',"|");end
+end
 end
 
 function row=localEmptyRow()
 row=struct( ...
 'scenario_id',"",'scenario_name',"",'magnet_set_id',"",'magnet_set_name',"", ...
-'speed_mps',NaN,'rho_kgm3',NaN,'CD',NaN,'CL',NaN,'Cm',NaN, ...
+'aero_source_mode',"",'aero_input_frame',"",'speed_mps',NaN,'rho_kgm3',NaN,'time_s',NaN, ...
+'CD',NaN,'CY',NaN,'CL',NaN,'Cl',NaN,'Cm',NaN,'Cn',NaN, ...
+'aero_ref_x_B_m',NaN,'aero_ref_y_B_m',NaN,'aero_ref_z_B_m',NaN, ...
 'motion_case',"",'body_attitude_case',"",'wind_orientation_case',"", ...
 'Fx_aero_N',NaN,'Fy_aero_N',NaN,'Fz_aero_N',NaN,'Mx_aero_Nm',NaN,'My_aero_Nm',NaN,'Mz_aero_Nm',NaN, ...
 'Fx_gravity_N',NaN,'Fy_gravity_N',NaN,'Fz_gravity_N',NaN, ...

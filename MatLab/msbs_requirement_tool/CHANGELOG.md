@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0 — Six-DOF aerodynamic wrench and incremental requirement extension
+
+- Added explicit aerodynamic source modes: backward-compatible three-coefficient, six-coefficient, direct dimensional wrench cases, and aerodynamic wrench time histories.
+- Added `CY`, `Cl`, and `Cn` with separate roll/yaw reference span `b` and pitch reference length `c`.
+- Added correlated six-DOF user scenarios with scalar metadata passthrough.
+- Prevented accidental six-coefficient Cartesian products unless explicitly enabled.
+- Added exact timestamp synchronization for simultaneous aerodynamic and kinematic time histories; no hidden interpolation is performed.
+- Added baseline-plus-perturbation magnetic requirement studies and `resolution_results.csv`.
+- Preserved the numerical-scaling meaning of `minimum_force_scale_N` and `minimum_moment_scale_Nm`.
+- Added regression/unit tests for the new aerodynamic interfaces and incremental linearity.
+- Position/attitude aerodynamic sensitivity matrices remain deliberately deferred until the perturbation/reference-state semantics are defined.
+
 ## 0.1.2 — Warning-array and containment-test corrections
 
 - Normalised all warning collections as column string arrays before concatenation.

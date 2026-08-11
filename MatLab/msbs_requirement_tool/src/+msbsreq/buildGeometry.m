@@ -45,6 +45,7 @@ geometry.aero_reference_point_B_m = cfg.geometry.aero_reference_point_B_m(:);
 geometry.inscribed_cuboid = msbsreq.fitInscribedCuboid(type, shape, sizing);
 geometry.reference_area_m2 = localReferenceArea(cfg, projectedArea, type, shape);
 geometry.reference_length_m = localReferenceLength(cfg, characteristicLength, type, shape);
+geometry.reference_span_m = localReferenceSpan(cfg, type, shape, outerDimensions);
 geometry.plot_data = localPlotData(type, shape, cfg);
 geometry.metadata = struct( ...
     'sizing_mode', sizing.mode, ...
@@ -102,7 +103,7 @@ for i = 1:numel(fields)
         elseif contains(name, 'volume')
             shape.(name) = value * scale^3;
         elseif contains(name, 'dimension') || contains(name, 'diameter') || ...
-                contains(name, 'length') || contains(name, 'radius') || ...
+                contains(name, 'length') || contains(name, 'span') || contains(name, 'radius') || ...
                 contains(name, 'centre') || contains(name, 'vertices')
             shape.(name) = value * scale;
         end
@@ -227,6 +228,35 @@ else
         value = defaultValue;
     end
 end
+end
+
+function value = localReferenceSpan(cfg, type, shape, outerDimensions)
+mode = lower(string(cfg.geometry.aero_reference_span.mode));
+if mode == "manual"
+    value = cfg.geometry.aero_reference_span.value_m;
+    localPositiveScalar(value,'reference span');
+    return
+end
+switch type
+    case "sphere"
+        value = shape.diameter_m;
+    case "custom"
+        if ~isfield(shape,'reference_span_m') || isempty(shape.reference_span_m)
+            if cfg.aero.mode=="coefficients_6dof"
+                error('msbsreq:MissingReferenceSpan', ...
+                    ['Custom geometry using six aerodynamic coefficients requires ', ...
+                     'geometry.sizing.custom.reference_span_m, or set ', ...
+                     'geometry.aero_reference_span.mode="manual".']);
+            end
+            value = NaN;
+            return
+        end
+        value = shape.reference_span_m;
+    otherwise
+        % Body-y extent is the documented default span for primitive geometries.
+        value = outerDimensions(2);
+end
+localPositiveScalar(value,'reference span');
 end
 
 function plotData = localPlotData(type, shape, cfg)

@@ -12,6 +12,11 @@ cfg.tunnel.cross_section.type = lower(string(cfg.tunnel.cross_section.type));
 cfg.tunnel.air.mode = lower(string(cfg.tunnel.air.mode));
 cfg.geometry.type = lower(string(cfg.geometry.type));
 cfg.geometry.sizing.mode = lower(string(cfg.geometry.sizing.mode));
+cfg.geometry.aero_reference_area.mode = lower(string(cfg.geometry.aero_reference_area.mode));
+cfg.geometry.aero_reference_length.mode = lower(string(cfg.geometry.aero_reference_length.mode));
+cfg.geometry.aero_reference_span.mode = lower(string(cfg.geometry.aero_reference_span.mode));
+cfg.aero.mode = lower(string(cfg.aero.mode));
+cfg.aero.time_sync.mode = lower(string(cfg.aero.time_sync.mode));
 cfg.magnets.mode = lower(string(cfg.magnets.mode));
 cfg.magnets.remanence_selection = lower(string(cfg.magnets.remanence_selection));
 cfg.motion.mode = lower(string(cfg.motion.mode));
@@ -20,8 +25,11 @@ cfg.magnetic.model = lower(string(cfg.magnetic.model));
 
 cfg.tunnel.speed = localResolveRange(cfg.tunnel.speed);
 cfg.aero.CD = localResolveRange(cfg.aero.CD);
+cfg.aero.CY = localResolveRange(cfg.aero.CY);
 cfg.aero.CL = localResolveRange(cfg.aero.CL);
+cfg.aero.Cl = localResolveRange(cfg.aero.Cl);
 cfg.aero.Cm = localResolveRange(cfg.aero.Cm);
+cfg.aero.Cn = localResolveRange(cfg.aero.Cn);
 
 tunnelYpr = localYprRow(cfg.frames.tunnel_to_earth.yaw_pitch_roll_deg, ...
     'frames.tunnel_to_earth.yaw_pitch_roll_deg');

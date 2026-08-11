@@ -22,12 +22,24 @@ lines(end+1)=sprintf('- Model: %s, outer dimensions [%.6g, %.6g, %.6g] m.', ...
     geom.type,geom.outer_dimensions_B_m);
 lines(end+1)=sprintf('- Nominal projected area: %.6g m^2; nominal blockage: %.4g (%.3g%%).', ...
     geom.projected_area_nominal_m2,geom.nominal_blockage_ratio,100*geom.nominal_blockage_ratio);
-lines(end+1)=sprintf('- Aerodynamic reference area: %.6g m^2; reference length: %.6g m.', ...
-    geom.reference_area_m2,geom.reference_length_m);
+if isfinite(geom.reference_span_m)
+    lines(end+1)=sprintf('- Aerodynamic reference area: %.6g m^2; reference length c: %.6g m; reference span b: %.6g m.', ...
+        geom.reference_area_m2,geom.reference_length_m,geom.reference_span_m);
+else
+    lines(end+1)=sprintf('- Aerodynamic reference area: %.6g m^2; reference length c: %.6g m.', ...
+        geom.reference_area_m2,geom.reference_length_m);
+end
+lines(end+1)="- Aerodynamic source mode: `"+cfg.aero.mode+"`.";
 lines(end+1)=sprintf('- Speed range: %.6g to %.6g m/s; CD %.6g to %.6g; CL %.6g to %.6g; Cm %.6g to %.6g.', ...
     cfg.tunnel.speed.lower,cfg.tunnel.speed.upper,cfg.aero.CD.lower,cfg.aero.CD.upper, ...
     cfg.aero.CL.lower,cfg.aero.CL.upper,cfg.aero.Cm.lower,cfg.aero.Cm.upper);
 lines(end+1)="- Motion mode: `"+cfg.motion.mode+"`.";
+if cfg.aero.mode=="coefficients_6dof"
+    lines(end+1)=sprintf('- Six-DOF coefficient ranges: CD %.6g..%.6g; CY %.6g..%.6g; CL %.6g..%.6g; Cl %.6g..%.6g; Cm %.6g..%.6g; Cn %.6g..%.6g.', ...
+        cfg.aero.CD.lower,cfg.aero.CD.upper,cfg.aero.CY.lower,cfg.aero.CY.upper, ...
+        cfg.aero.CL.lower,cfg.aero.CL.upper,cfg.aero.Cl.lower,cfg.aero.Cl.upper, ...
+        cfg.aero.Cm.lower,cfg.aero.Cm.upper,cfg.aero.Cn.lower,cfg.aero.Cn.upper);
+end
 lines(end+1)="";
 lines(end+1)="## Magnet and mass assumptions";
 lines(end+1)="";
@@ -83,6 +95,9 @@ lines(end+1)="## Detailed files";
 lines(end+1)="";
 lines(end+1)="- `scenario_results.csv`: one row per scenario and magnet set.";
 lines(end+1)="- `magnet_set_summary.csv`: set-level envelopes and residual acceptance.";
+if cfg.requirement_resolution.enable
+    lines(end+1)="- `resolution_results.csv`: baseline-plus-perturbation incremental field/gradient requirements.";
+end
 lines(end+1)="- `results_full.mat`: full-precision MATLAB study struct and intermediate records.";
 lines(end+1)="- `config_raw.*` and `config_resolved.*`: supplied and fully resolved inputs.";
 lines(end+1)="- `configuration.png/.pdf`, `worst_case_*.png/.pdf`, and `magnetic_field_*.png/.pdf`: review figures.";
