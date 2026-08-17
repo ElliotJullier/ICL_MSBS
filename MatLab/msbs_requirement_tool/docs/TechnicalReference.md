@@ -1,214 +1,230 @@
 # Technical reference
 
-## Frames and wrench convention
+## 1. Scope and frames
 
-Vectors use `v_A = R_AB v_B`. Body attitude is intrinsic Z-Y-X yaw-pitch-roll. A wrench about point O is `[F; M_O]`. Shifting from P to O uses:
+The program is a magnetic **requirements** tool. It converts a fully defined simultaneous rigid-body load state into a required applied field and first-order field gradient.
 
-```text
-M_O = M_P + r_OP × F
-```
+Three right-handed frames are used:
 
-All balance equations are formed about the model centre of mass in tunnel components.
+- **E** — Earth/inertial frame; gravity is `[0;0;-g]`.
+- **T** — tunnel and MSBS reporting frame; `+x_T` is downstream wind direction.
+- **B** — body-fixed frame for geometry, magnets and attitude.
 
-## Aerodynamics
+Wind and tunnel axes are deliberately identical in v0.3.0, so no independent W frame is maintained. A vertical or inclined tunnel is represented by rotating T relative to E.
 
-Dynamic pressure is `q = 0.5 rho V^2`. In W:
+For a vector fixed in B,
 
-```text
-F_a,W = [q S CD; 0; q S CL]
-M_a,R,W = [0; q S c Cm; 0]
-```
+\[
+\mathbf v_T=\mathbf R_{TB}\mathbf v_B.
+\]
 
-Both are rotated by `R_TW`; the moment is then shifted from aerodynamic reference point R to CoM C.
+For an Earth-frame free vector,
 
-## Newton–Euler requirement
+\[
+\mathbf v_T=\mathbf R_{ET}^{T}\mathbf v_E.
+\]
 
-```text
-F_mag,req = m a_C - F_a - F_g - F_other
-M_mag,req = I_T alpha + omega × (I_T omega) - M_a - M_g - M_other
-I_T = R_TB I_B R_TB^T
-```
+A wrench shifted from reference point P to centre of mass C uses
 
-The gyroscopic term is retained. Harmonic attitude changes update `R_TB` phase by phase before inertia and magnet vectors are transformed.
+\[
+\mathbf M_C=\mathbf M_P+\mathbf r_{CP}\times\mathbf F.
+\]
 
-## Hybrid mass properties
+## 2. One row is one physical state
 
-Each magnet is an explicit rotated cuboid. Remaining mass is uniformly distributed through the outer primitive. CoM and inertia are combined using parallel-axis shifts. Direct total-mass, CoM, and inertia overrides take precedence.
+`cfg.scenarios` is not an uncertainty-factor list. Each row is one simultaneous physical state. Speed, aerodynamic values, attitude and motion in a row therefore belong together physically.
 
-## Dipole approximation
+The program performs no Cartesian product and no interpolation. This prevents a low-Reynolds-number drag coefficient from being silently combined with an unrelated high-speed state and removes phase-matching ambiguity for unsteady motion.
 
-For selected remanence `Br` and effective factor `eta`:
+If `cfg.scenarios` is empty, one nominal static state is generated. In harmonic mode, evenly spaced phase rows are generated instead.
 
-```text
-M = eta Br / mu0
-m = M V d_hat
-```
+## 3. Aerodynamic inputs
 
-A direct dipole-moment override takes precedence. CSV data are configurable and supplier/temperature dependent.
+### 3.1 Coefficients
 
-## Applied field and source-free gradient
+The six supported channels are
 
-```text
-B(r) = B0 + G r
-```
+\[
+[C_D,C_Y,C_L,C_l,C_m,C_n].
+\]
 
-In a source-free magnetostatic region, `G` is symmetric and trace-free. The implementation verifies both properties after each solve against `cfg.validation.gradient_tolerance`. The unknown vector is:
+In MATLAB the rolling coefficient is named `Cl_roll` to avoid visual confusion with lift `CL`.
 
-```text
-x = [B0x B0y B0z gxx gyy gxy gxz gyz]^T
-```
+With dynamic pressure
 
-with:
+\[
+q=\frac12\rho U^2,
+\]
 
-```text
-G = [gxx  gxy  gxz
-     gxy  gyy  gyz
-     gxz  gyz -gxx-gyy]
-```
+reference area S, reference span b and reference length c,
 
-## Multi-magnet wrench
+\[
+\mathbf F_{a,T}=qS
+\begin{bmatrix}C_D\\C_Y\\C_L\end{bmatrix},
+\]
 
-For magnet i relative to CoM:
+\[
+\mathbf M_{a,R,T}=qS
+\begin{bmatrix}bC_l\\cC_m\\bC_n\end{bmatrix}.
+\]
 
-```text
-B_i = B0 + G r_i
-F_i = G m_i
-T_i = r_i × F_i + m_i × B_i
-```
+Unknown or irrelevant channels are simply zero. `Cl_roll`, `Cm` and `Cn` are therefore not mandatory physical inputs when moments are not being modelled.
 
-The total wrench is the sum over magnets. One common first-order field is used for every magnet.
+The `[b,c,b]` convention must match the aerodynamic data source. If dimensional forces and moments are already available, direct-wrench mode avoids coefficient-normalisation ambiguity.
 
-## Influence matrix
+### 3.2 Direct aerodynamic wrench
 
-The program builds `w = A x` by evaluating each unit basis vector of x through the direct multi-magnet wrench function. It records rank, singular values, a nonzero-singular-value condition number, and the left null space.
+`aero.mode="direct_wrench"` reads the six aerodynamic components directly from each scenario row. The wrench may be supplied in E, T or B components and is transformed to T and shifted from its body-fixed reference point to the model centre of mass.
 
-## Scaled solve
+## 4. Motion and inertial demand
 
-Field and gradient units cannot be minimised in one raw Euclidean norm. Define:
+For `motion.mode="specified"`, scenario acceleration, angular velocity and angular acceleration are transformed to T. If no kinematic columns are present, they are zero.
 
-```text
-x = Dx y
-Dx = diag(Bs,Bs,Bs,Gs,Gs,Gs,Gs,Gs)
-```
+The translational inertial demand is
 
-Force and moment are scaled by fixed study-wide maxima with safe lower bounds:
+\[
+\mathbf F_I=m\mathbf a_C.
+\]
 
-```text
-Dw = diag(1/Fs,1/Fs,1/Fs,1/Ts,1/Ts,1/Ts)
-```
+The rotational demand is the full Euler expression
 
-The code solves:
+\[
+\mathbf M_I=\mathbf I_T\boldsymbol\alpha+
+\boldsymbol\omega\times(\mathbf I_T\boldsymbol\omega),
+\]
 
-```text
-y = lsqminnorm(Dw A Dx, Dw w_req)
-x = Dx y
-```
+where
 
-`scaled_solution_norm = ||y||2` compares magnet sets under the chosen B/G scales. It is not energy, coil power, current, or a feasibility probability.
+\[
+\mathbf I_T=\mathbf R_{TB}\mathbf I_B\mathbf R_{TB}^{T}.
+\]
 
-## Residual and acceptance
+The harmonic helper generates acceleration, angular velocity, angular acceleration and small-angle body attitude at the same phase used by the aerodynamic row. It is a convenience for prescribed single-frequency motion, not an aerodynamic model.
 
-Physical residual:
+## 5. Complete required magnetic wrench
 
-```text
-r = A x - w_req
-```
+All contributions are first expressed in T and referenced to the centre of mass. The required magnetic wrench is then
 
-Dimensionless relative residual:
+\[
+\boxed{\mathbf w_{mag,req}=\mathbf w_I-\mathbf w_a-\mathbf w_g-\mathbf w_{other}}.
+\]
 
-```text
-relative = ||Dw r||2 / ||Dw w_req||2
-```
+This is a simultaneous six-component balance. The program does not calculate independent scalar "drag gradient", "gravity gradient" and "inertial gradient" maxima and add them.
 
-For zero requested wrench the numerator itself is used. A scenario is accepted when this value is below `cfg.magnetic.acceptance_relative_residual`. Set-level acceptance requires every scenario to pass.
+## 6. First-order magnetic field
 
-## Single aligned check
+The applied external field around the model centre of mass is
 
-For one centred `m = [mx,0,0]`:
+\[
+\mathbf B(\mathbf r)=\mathbf B_0+\mathbf G\mathbf r.
+\]
 
-```text
-Fx = mx dBx/dx
-Fy = mx dBy/dx
-Fz = mx dBz/dx
-Ty = -mx Bz
-Tz =  mx By
-```
+The model region is assumed current-free, so
 
-`Tx` is directly uncontrollable and appears in the residual.
+\[
+\nabla\times\mathbf B=0,\qquad \nabla\cdot\mathbf B=0,
+\]
 
-## Numerical checks
+which makes G symmetric and trace-free:
 
-The tests and runtime validation cover proper rotations, symmetric positive inertia, exact supported geometry fits, force/moment signs and reference shifts, harmonic peak acceleration, gyroscopic demand, source-free gradient symmetry/trace, direct-versus-basis magnetic wrench equality, rank/residual behaviour, scenario counts, and fixed regression values.
+\[
+\mathbf G=
+\begin{bmatrix}
+g_{xx}&g_{xy}&g_{xz}\\
+g_{xy}&g_{yy}&g_{yz}\\
+g_{xz}&g_{yz}&-g_{xx}-g_{yy}
+\end{bmatrix}.
+\]
 
-## Known first-version limitations
+The physical parameter vector retained by the magnetic map is
 
-- point dipoles rather than finite-volume magnets;
-- first spatial derivative only;
-- no self-field or magnet–magnet interaction;
-- no coil/current model;
-- nominal-orientation blockage diagnostic only;
-- primitive/custom-proxy geometry only;
-- small-angle engineering interpretation for harmonic angular motion;
-- generic initial magnet-grade data.
+\[
+\mathbf x=[B_x,B_y,B_z,g_{xx},g_{yy},g_{xy},g_{xz},g_{yz}]^T.
+\]
 
-## Six-DOF aerodynamic extension
+## 7. One or multiple permanent magnets
 
-`aero.mode="coefficients_6dof"` uses
+For magnet i, its body-fixed centre and dipole are rotated to T:
 
-```text
-F_a,W   = q S [CD; CY; CL]
-M_a,R,W = q S [b Cl; c Cm; b Cn]
-```
+\[
+\mathbf r_i=\mathbf R_{TB}(\mathbf r_{i,B}-\mathbf r_{C,B}),
+\qquad
+\mathbf m_i=\mathbf R_{TB}\mathbf m_{i,B}.
+\]
 
-where `c` is `geometry.reference_length_m` and `b` is `geometry.reference_span_m`. The existing wrench shift then moves the moment from aerodynamic reference point R to the model CoM. This preserves the legacy sign convention: the coefficients describe the external aerodynamic wrench, and Newton–Euler balance subtracts that wrench when calculating the magnetic requirement.
+Every magnet experiences the same constant gradient G but a position-dependent local field
 
-Direct aerodynamic wrench rows are transformed with the same frame utilities and reference-point shift used elsewhere. They enter the balance at exactly the same location as coefficient-derived aerodynamics.
+\[
+\mathbf B_i=\mathbf B_0+\mathbf G\mathbf r_i.
+\]
 
-## Correlated unsteady aerodynamics and motion
+The force and torque are
 
-For exact synchronized time histories, each row supplies an aerodynamic wrench and the matching motion row supplies `a_C`, `omega`, `alpha`, and optionally absolute attitude. The assembled requirement is
+\[
+\mathbf F_i=\mathbf G\mathbf m_i,
+\]
 
-```text
-F_mag,req(t) = m a_C(t) - F_a(t) - F_g - F_other(t)
-M_mag,req(t) = I_T(t) alpha(t) + omega(t) × (I_T(t) omega(t))
-               - M_a(t) - M_g(t) - M_other(t)
-```
+\[
+\mathbf T_i=\mathbf r_i\times\mathbf F_i+\mathbf m_i\times\mathbf B_i.
+\]
 
-Gravity is applied through the CoM in the present rigid-body model, so `M_g=0`. Version 0.2.0 does not interpolate independent time vectors.
+The rigid-body magnetic wrench is the sum over all magnets. There is no special "main magnet" in the solver and no independent gradient assigned to each magnet. A poor multi-magnet geometry can therefore require a larger field/gradient or make a wrench direction uncontrollable.
 
-## Incremental magnetic requirement
+Permanent-magnet mutual fields are not included because they are internal to the rigid assembly for net external-wrench purposes; structural and demagnetisation effects remain outside this tool.
 
-For a fixed baseline scenario and magnet map `A`, the first-order model is linear. The incremental study compares
+## 8. The 6×8 magnetic influence matrix A
 
-```text
-delta_x_difference = solution(w0 + delta_w) - solution(w0)
-delta_x_direct     = solution(delta_w)
-```
+For a fixed magnet arrangement and attitude, magnetic wrench is linear in x:
 
-using the same dimensional scaling matrices as the main solve. These should agree to numerical precision for a fixed map. The output therefore checks both incremental residual and solution consistency. This calculation quantifies a requested change in field/gradient around a loaded operating point; it is not a hardware-resolution model.
+\[
+\boxed{\mathbf w_{mag}=\mathbf A\mathbf x},\qquad \mathbf A\in\mathbb R^{6\times8}.
+\]
 
-## Aerodynamic metadata
+`buildMagneticMap` constructs A by basis evaluation. Column j is the six-component wrench produced by setting physical magnetic parameter `x(j)=1` and every other parameter to zero. Thus A maps **field/gradient to wrench**; the requirement solve uses it in the inverse direction to find x for a requested wrench.
 
-Unrecognised scalar metadata columns in correlated aerodynamic tables are carried through for traceability but are not referenced by any governing equation. This permits Reynolds number, Strouhal number, reduced velocity, roughness, source identifiers, and similar provenance to remain attached to each physical scenario.
+For one centred +x dipole of magnitude m,
 
-## Deferred aerodynamic sensitivity interface
+\[
+\mathbf F=m[g_{xx},g_{xy},g_{xz}]^T,
+\qquad
+\mathbf T=[0,-mB_z,mB_y]^T.
+\]
 
-Position/attitude aerodynamic sensitivity matrices require a defined reference pose and perturbation vector before they can enter the load balance. They are therefore not automatically applied in v0.2.0. Actual motion, pose-measurement noise, and actuator-command error remain distinct concepts; measurement noise is never converted into inertial acceleration by numerical differentiation in the present tool.
+Therefore torque about x is uncontrollable for that single centred dipole. A +z dipole analogously cannot generate torque about z. Multiple separated/nonparallel magnets change A through their different dipoles and moment arms.
 
-## Actual motion versus measurement noise
+## 9. Minimum norm and Frobenius gradient objective
 
-Only actual prescribed motion enters Newton--Euler inertial demand. For harmonic translational jitter of physical amplitude `delta_A` and frequency `f`,
+The six wrench equations and eight magnetic parameters are generally underdetermined. MATLAB `lsqminnorm` is therefore used, but v0.3.0 no longer minimizes the raw five independent gradient coordinates.
 
-```text
-delta_a_peak = (2*pi*f)^2 delta_A
-delta_F_peak = m delta_a_peak
-```
+The solver internally maps the five gradient degrees of freedom onto an orthonormal symmetric trace-free basis. If q contains those five coordinates,
 
-For sufficiently small harmonic angular jitter,
+\[
+\|\mathbf q\|_2=\|\mathbf G\|_F.
+\]
 
-```text
-delta_alpha_peak = (2*pi*f)^2 delta_theta
-delta_M_peak ~= I delta_alpha_peak
-```
+The dimensionally scaled objective is therefore
 
-Pose measurement noise is not differentiated into acceleration by the requirement tool. Command/actuator error is also a separate quantity and requires a later coil/amplifier/controller model.
+\[
+\min\left(
+\left\|\frac{\mathbf B_0}{B_s}\right\|_2^2+
+\left\|\frac{\mathbf G}{G_s}\right\|_F^2
+\right)^{1/2},
+\]
+
+subject to reproducing the requested wrench in the scaled least-squares sense. `lsqminnorm` is the numerical solver; the Frobenius construction defines the physically meaningful gradient norm that solver minimizes.
+
+## 10. Boundary to future coil design
+
+If a later coil model provides
+
+\[
+\mathbf x=\mathbf C\mathbf I,
+\]
+
+where each column of C is field/gradient per ampere for one coil, then
+
+\[
+\mathbf w=\mathbf A\mathbf C\mathbf I.
+\]
+
+This project stops before that step. Its output is a coil-independent magnetic requirement. A future coil tool may solve `C I = x` or, preferably when optimizing the real actuator, solve `A C I = w_req` directly for current or copper-loss objectives.

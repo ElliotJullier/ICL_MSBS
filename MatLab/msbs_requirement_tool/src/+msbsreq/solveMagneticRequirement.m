@@ -1,18 +1,25 @@
 function solution = solveMagneticRequirement(map, requiredWrench, scales, cfg)
-%SOLVEMAGNETICREQUIREMENT Solve the dimensionally scaled minimum-norm problem.
+%SOLVEMAGNETICREQUIREMENT Solve the scaled minimum-field/gradient problem.
+% The map uses physical coordinates [B; gxx gyy gxy gxz gyz]. The solve is
+% performed in an orthonormal symmetric trace-free gradient basis so the
+% gradient part of the Euclidean minimum norm is exactly ||G||_F.
 arguments
     map (1,1) struct
     requiredWrench (6,1) double {mustBeFinite}
     scales (1,1) struct
     cfg (1,1) struct
 end
-Dx=diag([repmat(cfg.magnetic.field_scale_T,1,3), ...
+
+P=localGradientCoordinateTransform();
+Tbasis=blkdiag(eye(3),P);
+Dobjective=diag([repmat(cfg.magnetic.field_scale_T,1,3), ...
     repmat(cfg.magnetic.gradient_scale_Tpm,1,5)]);
 Dw=diag([repmat(1/scales.force_N,1,3),repmat(1/scales.moment_Nm,1,3)]);
-A_scaled=Dw*map.A*Dx;
+A_scaled=Dw*map.A*Tbasis*Dobjective;
 w_scaled=Dw*requiredWrench;
 y=lsqminnorm(A_scaled,w_scaled);
-x=Dx*y;
+x=Tbasis*Dobjective*y;
+
 [achieved,localFields]=msbsreq.evaluateMagneticWrench(x,map.positions_T_m,map.dipoles_T_Am2);
 residual=achieved-requiredWrench;
 scaledResidual=Dw*residual;
@@ -29,6 +36,7 @@ if norm(G-G.','fro')>tol || abs(trace(G))>tol
         ['Constructed field gradient violates the configured source-free ', ...
          'symmetry or trace tolerance.']);
 end
+
 solution=struct();
 solution.x=x;
 solution.B0_T=x(1:3);
@@ -55,4 +63,14 @@ solution.rank=map.rank;
 solution.condition_number=map.condition_number;
 solution.singular_values=map.singular_values;
 solution.left_null_space=map.left_null_space;
+end
+
+function P=localGradientCoordinateTransform()
+% q are orthonormal symmetric trace-free coordinates; p=P*q gives
+% p=[gxx gyy gxy gxz gyz]. Therefore ||q||_2=||G||_F.
+P=[ 1/sqrt(2),  1/sqrt(6), 0,         0,         0; ...
+   -1/sqrt(2),  1/sqrt(6), 0,         0,         0; ...
+    0,          0,         1/sqrt(2), 0,         0; ...
+    0,          0,         0,         1/sqrt(2), 0; ...
+    0,          0,         0,         0,         1/sqrt(2)];
 end

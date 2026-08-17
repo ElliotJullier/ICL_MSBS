@@ -13,7 +13,7 @@ aero=msbsreq.calculateAeroWrench(scenario,geometry,massProperties);
 gravity=msbsreq.calculateGravityWrench(tunnel,massProperties);
 inertial=msbsreq.calculateInertialDemand(scenario,massProperties);
 other=localAdditionalWrench(cfg.additional_wrenches,scenario, ...
-    massProperties.centre_of_mass_B_m,scenario.additional_wrench_scales);
+    massProperties.centre_of_mass_B_m);
 required=inertial-aero-gravity-other;
 
 loads=struct('scenario',scenario,'aero_wrench_T',aero,'gravity_wrench_T',gravity, ...
@@ -30,28 +30,22 @@ scenario.speed_mps=row.speed_mps;
 scenario.rho_kgm3=rho;
 scenario.aero_source_mode=string(row.aero_source_mode);
 scenario.CD=row.CD;scenario.CY=row.CY;scenario.CL=row.CL;
-scenario.Cl=row.Cl;scenario.Cm=row.Cm;scenario.Cn=row.Cn;
-scenario.body_attitude_case=string(row.body_attitude_case);
-scenario.wind_orientation_case=string(row.wind_orientation_case);
-scenario.motion_case=string(row.motion_case);
-scenario.R_TB=row.R_TB{1}; scenario.R_TW=row.R_TW{1}; scenario.R_ET=R_ET;
+scenario.Cl_roll=row.Cl_roll;scenario.Cm=row.Cm;scenario.Cn=row.Cn;
+scenario.motion_mode=string(row.motion_mode);
+scenario.R_TB=row.R_TB{1};scenario.R_ET=R_ET;
 scenario.a_C_T_mps2=row.a_C_T_mps2{1};
 scenario.omega_T_radps=row.omega_T_radps{1};
 scenario.alpha_T_radps2=row.alpha_T_radps2{1};
-scenario.direct_inertial_demand=row.direct_inertial_demand;
-scenario.inertial_force_override_T=row.inertial_force_override_T{1};
-scenario.inertial_moment_override_T=row.inertial_moment_override_T{1};
 scenario.aero_force_input=row.aero_force_input{1};
 scenario.aero_moment_input=row.aero_moment_input{1};
 scenario.aero_input_frame=string(row.aero_input_frame);
 scenario.aero_reference_point_B_m=row.aero_reference_point_B_m{1};
 scenario.metadata=row.metadata{1};
-scenario.additional_wrench_scales=row.additional_wrench_scales{1};
 scenario.motion_phase_rad=row.motion_phase_rad;
 scenario.time_s=row.time_s;
 end
 
-function total=localAdditionalWrench(T,scenario,centreOfMassB,scales)
+function total=localAdditionalWrench(T,scenario,centreOfMassB)
 total=zeros(6,1);
 if isempty(T),return,end
 required={'name','Fx_N','Fy_N','Fz_N','Mx_Nm','My_Nm','Mz_Nm','components_frame','reference_point_B_m'};
@@ -59,14 +53,12 @@ if ~all(ismember(required,T.Properties.VariableNames))
     error('msbsreq:InvalidAdditionalWrenches', ...
         'Additional-wrench table is missing one or more required columns.');
 end
-frames=struct('R_ET',scenario.R_ET,'R_TB',scenario.R_TB,'R_TW',scenario.R_TW);
+frames=struct('R_ET',scenario.R_ET,'R_TB',scenario.R_TB);
 for i=1:height(T)
     force=[T.Fx_N(i);T.Fy_N(i);T.Fz_N(i)];
     moment=[T.Mx_Nm(i);T.My_Nm(i);T.Mz_Nm(i)];
     point=T.reference_point_B_m{i};
-    scale=1;
-    if i<=numel(scales),scale=scales(i);end
-    total=total+scale*msbsreq.transformWrench(force,moment, ...
+    total=total+msbsreq.transformWrench(force,moment, ...
         upper(string(T.components_frame(i))),point(:),centreOfMassB,frames);
 end
 end

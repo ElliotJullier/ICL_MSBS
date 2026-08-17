@@ -9,7 +9,7 @@ arguments
 end
 fig=figure('Name','MSBS configuration','Visible','off');
 ax=axes(fig);hold(ax,'on');axis(ax,'equal');grid(ax,'on');view(ax,3);
-R=cfg.frames.body_attitude_cases(1).R_TB;
+R=cfg.frames.R_TB_nominal;
 origin=cfg.frames.body_origin_T_m;
 scale=max([geometry.outer_dimensions_B_m(:);sqrt(tunnel.area_m2)]);
 
@@ -30,11 +30,9 @@ axisLength=0.25*scale;
 localArrow(ax,origin,R(:,1),axisLength,[0.8 0.2 0.2],"Body x");
 localArrow(ax,origin,R(:,2),axisLength,[0.2 0.7 0.2],"Body y");
 localArrow(ax,origin,R(:,3),axisLength,[0.2 0.3 0.8],"Body z");
-localArrow(ax,[0;0;0],[1;0;0],axisLength,[0.5 0 0],"Tunnel x");
+localArrow(ax,[0;0;0],[1;0;0],axisLength,[0.5 0 0],"Tunnel/wind x");
 localArrow(ax,[0;0;0],[0;1;0],axisLength,[0 0.5 0],"Tunnel y");
 localArrow(ax,[0;0;0],[0;0;1],axisLength,[0 0 0.5],"Tunnel z");
-wind=cfg.frames.wind_orientation_cases(1).R_TW(:,1);
-localArrow(ax,origin,wind,0.45*scale,[0.1 0.1 0.1],"Wind");
 localArrow(ax,origin,tunnel.gravity_T_mps2,0.35*scale,[0.3 0.2 0.1],"Gravity");
 comT=origin+R*massProperties.centre_of_mass_B_m;
 refT=origin+R*geometry.aero_reference_point_B_m;

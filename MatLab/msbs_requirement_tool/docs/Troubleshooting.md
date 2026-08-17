@@ -1,86 +1,50 @@
 # Troubleshooting
 
-## MATLAB cannot find `runStudy`
+## MATLAB is running the wrong copy
 
-Set MATLAB's Current Folder to the project root containing `runStudy.m`. Do not start in `cases/` or `src/`. Version 0.1.1 and later add the project root explicitly while `runAllTests` is running. After replacing an older project copy, run `clear functions` and `rehash path` once before rerunning the tests.
-
-## The case function is not found
-
-The case file must be in `cases/` or on the MATLAB path, and these three names must match:
-
-- file: `case_my_experiment.m`;
-- first line: `function cfg = case_my_experiment()`;
-- call: `runStudy("case_my_experiment")`.
-
-## Invalid rotation matrix
-
-Explicit `R_TB` or `R_TW` matrices must satisfy `R.'*R = eye(3)` and `det(R) = +1` within tolerance. Prefer documented yaw-pitch-roll inputs when possible.
-
-## Excessive or impossible blockage
-
-Blockage is a fraction: use `0.10` for 10%, not `10`. The target projected area must be smaller than the tunnel cross-section. For a high blockage warning, reduce the target or deliberately change `cfg.validation.blockage_advisory_limit` after assessing tunnel corrections.
-
-## Invalid range
-
-A range must have finite `lower <= nominal <= upper`. Use:
+Check:
 
 ```matlab
-msbsreq.rangeSpec(30, 5, "absolute")
-msbsreq.rangeSpec(0.5, 10, "percent")
-msbsreq.rangeSpec(0.5, [], "absolute")
+pwd
+strtrim(fileread("VERSION"))
+which runStudy -all
+which msbsreq.buildScenarioTable -all
 ```
 
-Speed and density cannot have negative lower bounds. Aerodynamic coefficients can be signed.
+All paths should point to the same `msbs_requirement_tool` folder and `VERSION` should report `0.3.0`.
 
-## Unknown magnet grade
+## Invalid rotation
 
-Edit or add the grade in `data/magnet_grades.csv`. The delivered N35–N52 rows are configurable generic placeholders intended for later replacement with exact Magnet Store product data.
+Only proper orthonormal rotations are accepted. User-facing tunnel/body attitudes use intrinsic Z-Y-X `[yaw pitch roll]` degrees.
 
+## Direct aerodynamic wrench rejected
 
-## Magnet database headers are renamed or `grade` is unrecognised
+`aero.mode="direct_wrench"` requires all six columns in `cfg.scenarios`:
 
-Use version 0.1.1 or later. Magnet data are loaded through `msbsreq.loadMagnetGradeTable`, which fixes the CSV delimiter, preserves the documented column names, and validates the complete schema before calculations begin.
+`Fx_aero_N`, `Fy_aero_N`, `Fz_aero_N`, `Mx_aero_Nm`, `My_aero_Nm`, `Mz_aero_Nm`.
 
-## Magnet lies outside the model
+Optional `aero_frame` is E, T or B. Optional `aero_reference_point_B_m` must be a cell column of finite 3-vectors.
 
-Correct the magnet dimensions, centre, or `R_BM`. For a custom geometry, the first version checks against the supplied bounding proxy. Containment checking can be deliberately disabled with:
+## Specified motion rejected
 
-```matlab
-cfg.magnets.check_containment = false;
-```
+If any kinematic column is supplied, all nine must be present:
 
-Disabling the check does not make an invalid geometry physically valid.
+`a_x`, `a_y`, `a_z`, `omega_x`, `omega_y`, `omega_z`, `alpha_x`, `alpha_y`, `alpha_z`.
 
-## Too many factorial cases
+Set `cfg.motion.mode="specified"`. If motion is unknown or irrelevant, omit all nine columns and the motion demand is zero.
 
-The tool stops rather than silently discarding combinations. Reduce independent ranges or frame/motion cases, increase `max_cases` deliberately, or use `cfg.combinations.strategy = "user_defined"` for correlated physical scenarios.
+## Harmonic motion has no phase
 
-## Poorly conditioned magnetic map
+When `cfg.scenarios` is explicitly supplied in harmonic mode, every row must have `phase_rad` or `time_s`. If `cfg.scenarios` is empty, the program generates `samples_per_cycle` evenly spaced phases automatically.
 
-A high condition number means small wrench changes can require large changes in the solved field/gradient. Inspect magnet geometry and orientation, compare singular values, and consider separated or nonparallel magnets. The scaled solution remains a requirement calculation, not a robust coil design.
+## Too many scenarios
 
-## Uncontrollable torque or residual
+There is no factorial expansion. `max_scenarios` is only a safety cap on explicit rows (or the harmonic rows generated from `samples_per_cycle`). Reduce the table size or increase the cap deliberately.
 
-A centred single dipole cannot directly generate torque parallel to its own dipole direction. The tool reports rather than hides the residual. Change the magnetisation direction or define an explicit multi-magnet arrangement.
+## Residual is large
 
-## Relative residual threshold is confusing
+A large relative residual generally means the selected magnet arrangement cannot reproduce that six-component wrench within the point-dipole/first-order model. Inspect `map_rank`, `map_condition_number`, the required component values and the magnet directions/positions; do not interpret the solver residual as a coil-current limitation.
 
-The threshold is dimensionless and uses fixed study-wide force and moment scales. `1e-6` means the remaining scaled wrench is at most one millionth of the requested scaled wrench norm. It is used for controllability/ranking, not for specifying sensor accuracy or mechanical load tolerance.
+## Custom geometry moment coefficients
 
-## PDF or PNG export fails on a headless installation
-
-Run MATLAB with graphics support and verify that `exportgraphics` can create files. Set:
-
-```matlab
-cfg.visualisation.enable = false;
-```
-
-for calculation-only runs while diagnosing graphics configuration.
-
-## The result appears physically unrealistic
-
-Check the warnings and assumptions in `run_summary.md`. Common causes are generic remanence, a magnet too large for a point-dipole approximation, widely separated magnets under one first-order gradient, approximate shell inertia, unrealistic simultaneous factorial corners, or aerodynamic coefficients defined using a different reference area or moment point.
-
-## `MATLAB:catenate:dimensionMismatch` while collecting warnings
-
-Use version 0.1.2 or later. Earlier versions could allow a dynamically grown string array to become a row vector and then attempt to vertically concatenate it with a column vector. Version 0.1.2 fixes the orientation explicitly and normalises warning arrays before concatenation.
+The default roll/yaw reference span is the body-y outer extent. If the source defining `Cl_roll` or `Cn` uses another b, set `geometry.aero_reference_span.mode="manual"` and provide `value_m`.

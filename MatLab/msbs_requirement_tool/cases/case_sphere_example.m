@@ -1,44 +1,23 @@
 function cfg = case_sphere_example()
-%CASE_SPHERE_EXAMPLE Worked sphere case with aerodynamic and harmonic ranges.
+%CASE_SPHERE_EXAMPLE Sphere with matched harmonic rigid-body motion.
+cfg=case_minimal_example();
+cfg.meta.case_id="sphere_harmonic_example";
+cfg.meta.description="Sphere with 2 Hz heave/pitch motion and matched aerodynamic states";
 
-cfg.meta.case_id = "sphere_example";
-cfg.meta.description = "Worked 10% blockage sphere with phase-resolved heave and pitch motion";
+cfg.aero.CD=0.50;
+cfg.aero.CL=0.05;
+cfg.aero.Cm=0.01;
 
-cfg.tunnel.cross_section.type = "rectangular";
-cfg.tunnel.cross_section.width_m = 0.60;
-cfg.tunnel.cross_section.height_m = 0.60;
-cfg.tunnel.speed = msbsreq.rangeSpec(30, 5, "absolute");
-cfg.tunnel.air.mode = "density";
-cfg.tunnel.air.rho_kgm3 = 1.225;
+cfg.motion.mode="harmonic";
+cfg.motion.harmonic.frequency_Hz=2;
+cfg.motion.harmonic.translation_amplitude_m=[0;0;0.002];
+cfg.motion.harmonic.translation_phase_rad=[0;0;0];
+cfg.motion.harmonic.angular_amplitude_rad=deg2rad([0;2;0]); % [roll; pitch; yaw]
+cfg.motion.harmonic.angular_phase_rad=[0;0;0];
+cfg.motion.harmonic.samples_per_cycle=24;
 
-cfg.frames.tunnel_to_earth.yaw_pitch_roll_deg = [0 0 0];
-cfg.frames.body_to_tunnel.yaw_pitch_roll_deg = [0 0 0];
-cfg.frames.wind_to_tunnel.R_TW = eye(3);
-
-cfg.geometry.type = "sphere";
-cfg.geometry.sizing.mode = "blockage";
-cfg.geometry.sizing.blockage_ratio = 0.10;
-cfg.geometry.aero_reference_area.mode = "projected_nominal";
-cfg.geometry.aero_reference_length.mode = "characteristic_default";
-
-cfg.magnets.mode = "automatic";
-cfg.magnets.remanence_selection = "minimum";
-cfg.magnets.automatic.grade = "N52";
-cfg.magnets.automatic.linear_shrink_fraction = 0.0;
-cfg.magnets.automatic.direction_candidates_B = eye(3);
-
-cfg.mass.shell_mass_factor = 1.30;
-
-cfg.aero.CD = msbsreq.rangeSpec(0.50, 0.05, "absolute");
-cfg.aero.CL = msbsreq.rangeSpec(0.05, 0.05, "absolute");
-cfg.aero.Cm = msbsreq.rangeSpec(0.01, 0.01, "absolute");
-
-cfg.motion.mode = "harmonic_single_frequency";
-cfg.motion.harmonic.frequency_Hz = 2;
-cfg.motion.harmonic.translation_amplitude_m = [0;0;0.002];
-cfg.motion.harmonic.angular_amplitude_rad = deg2rad([0;2;0]); % roll, pitch, yaw
-cfg.motion.harmonic.samples_per_cycle = 24;
-
-cfg.combinations.max_cases = 4096;
-cfg.magnetic.acceptance_relative_residual = 1e-6;
+% With cfg.scenarios empty, 24 phase rows are generated and the constant
+% coefficients above are evaluated at each matched motion phase. To supply
+% phase-varying aerodynamic data, provide explicit cfg.scenarios rows with
+% phase_rad (or time_s) plus the matching coefficient or wrench values.
 end

@@ -1,8 +1,8 @@
 function vectorT = transformVector(vector, sourceFrame, frames)
-%TRANSFORMVECTOR Transform a free vector from E, T, B, or W into tunnel frame.
+%TRANSFORMVECTOR Transform a free vector from E, T, or B into tunnel frame.
 arguments
     vector (3,1) double {mustBeFinite}
-    sourceFrame (1,1) string {mustBeMember(sourceFrame,["E","T","B","W"])}
+    sourceFrame (1,1) string {mustBeMember(sourceFrame,["E","T","B"])}
     frames struct
 end
 switch sourceFrame
@@ -12,7 +12,5 @@ switch sourceFrame
         vectorT = vector;
     case "B"
         vectorT = frames.R_TB * vector;
-    case "W"
-        vectorT = frames.R_TW * vector;
 end
 end

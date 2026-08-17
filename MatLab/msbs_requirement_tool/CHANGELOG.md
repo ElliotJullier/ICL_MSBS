@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 — Streamlined simultaneous-state interface and Frobenius magnetic objective
+
+- Replaced legacy/factorial aerodynamic interfaces with one six-channel coefficient mode and one direct dimensional-wrench mode.
+- Renamed rolling coefficient input to `Cl_roll` to distinguish it from lift `CL`.
+- Replaced separate aerodynamic/motion case matching with one exact `cfg.scenarios` table: one row is one simultaneous physical state.
+- Reduced motion modes to none, specified kinematics, and a small-angle harmonic helper.
+- Removed independent W-frame orientation; T is the wind-aligned tunnel/reporting frame while E retains gravity and B retains body-fixed geometry.
+- Removed the incremental resolution subsystem, direct inertial-wrench shortcut, factorial combination machinery, and time-history interpolation/synchronization options.
+- Retained explicit multi-magnet geometry with one common first-order external field and constant gradient.
+- Corrected the minimum-norm magnetic objective by solving in an orthonormal symmetric trace-free gradient basis, making the gradient contribution exactly the Frobenius norm.
+- Clarified operating-point sweeps versus physical-configuration changes and the boundary to future coil-current optimization.
+
 ## 0.2.0 — Six-DOF aerodynamic wrench and incremental requirement extension
 
 - Added explicit aerodynamic source modes: backward-compatible three-coefficient, six-coefficient, direct dimensional wrench cases, and aerodynamic wrench time histories.

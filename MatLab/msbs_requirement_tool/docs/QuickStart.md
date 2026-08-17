@@ -1,112 +1,65 @@
 # Quick start
 
-This guide takes a new user from the ZIP archive to a completed study.
+## 1. Run the tests
 
-## 1. Open the project
-
-Extract the ZIP, start MATLAB, and set the Current Folder to the extracted `msbs_requirement_tool` directory. Do not permanently add every subfolder to the MATLAB path; the entry points configure the required paths themselves.
-
-## 2. Run the tests once
+Open MATLAB with the Current Folder set to `MatLab/msbs_requirement_tool` and run:
 
 ```matlab
 results = runAllTests();
 ```
 
-The first delivered version was generated without an available MATLAB executable. Treat a clean local test run as the first acceptance check. See [Troubleshooting](Troubleshooting.md) if any test fails.
+Do not continue with a release if any test fails.
 
-## 3. Run the minimal example
+## 2. Run the minimal example
 
 ```matlab
 study = runStudy("case_minimal_example");
 ```
 
-The example uses:
+This uses a 0.60 m × 0.60 m horizontal tunnel, a 10% blockage sphere, a maximum inscribed N52 magnet and the three automatic body-axis magnetisation candidates.
 
-- a 0.60 m × 0.60 m rectangular test section;
-- a sphere sized to 10% nominal blockage;
-- an automatic N52 magnet occupying the full supported inscribed cuboid;
-- three candidate body-axis magnetisation directions;
-- a static 30 m/s load case.
+## 3. Create a case
 
-The command returns the full `study` struct and prints the result-folder path.
-
-## 4. Inspect the main outputs
-
-Open the printed result folder under:
-
-```text
-results/minimal_example/<timestamp>/
-```
-
-Start with:
-
-- `configuration.png`: tunnel, model, magnet, frames, gravity, wind, centre of mass, and aerodynamic reference point;
-- `run_summary.md`: plain-language assumptions, envelopes, residual acceptance, and limitations;
-- `magnet_set_summary.csv`: one row per magnet set;
-- `scenario_results.csv`: one row per physical scenario and magnet set;
-- `results_full.mat`: the complete full-precision `study` object.
-
-## 5. Create a new case
-
-In the MATLAB Current Folder browser, copy:
-
-```text
-cases/case_template.m
-```
-
-to a new file, for example:
-
-```text
-cases/case_my_experiment.m
-```
-
-Change the first line to:
-
-```matlab
-function cfg = case_my_experiment()
-```
-
-Then edit only the clearly marked `USER INPUT` sections. At minimum review:
-
-1. tunnel dimensions, speed, and density;
-2. geometry type and absolute or blockage sizing;
-3. automatic or manual magnet arrangement;
-4. mass assumptions or overrides;
-5. `CD`, `CL`, and `Cm` ranges;
-6. motion mode;
-7. scenario strategy;
-8. dimensionless residual threshold and any advisory field limits.
-
-Run it with:
+Copy `cases/case_template.m`, rename the file and function identically, then edit the `USER INPUT` sections. Run it with:
 
 ```matlab
 study = runStudy("case_my_experiment");
 ```
 
-The file name, function name, and string passed to `runStudy` must match.
+The normal workflow is:
 
-## 6. Iterate a parameter
+1. Define tunnel orientation, geometry, magnets and mass.
+2. Choose `cfg.aero.mode = "coefficients"` or `"direct_wrench"`.
+3. Choose `cfg.motion.mode = "none"`, `"specified"` or `"harmonic"`.
+4. Put simultaneous operating states in `cfg.scenarios`. One row is one physical state.
+5. Run the study and inspect `scenario_results.csv`, `magnet_set_summary.csv` and `run_summary.md`.
 
-For example, compare 5%, 10%, and 15% blockage by changing:
+## 4. Exact operating-point sweeps
 
-```matlab
-cfg.geometry.sizing.blockage_ratio = 0.10;
-```
-
-Save the case and rerun:
-
-```matlab
-study = runStudy("case_my_experiment");
-```
-
-A new timestamped folder is created by default. Previous results are not overwritten.
-
-## 7. Understand the residual threshold
+For a speed study, use explicit rows rather than ranges:
 
 ```matlab
-cfg.magnetic.acceptance_relative_residual = 1e-6;
+cfg.scenarios = table( ...
+    ["U20";"U30";"U40";"U50"], ...
+    [20;30;40;50], ...
+    [0.70;0.60;0.55;0.52], ...
+    'VariableNames',{'scenario_name','speed_mps','CD'});
 ```
 
-This is dimensionless. It compares the norm of the unachieved wrench after fixed force/moment scaling with the norm of the similarly scaled requested wrench. A value of `1e-6` is a strict numerical controllability criterion, not a hardware tolerance and not a statement that the required field can be built.
+Omitted coefficient columns use the defaults in `cfg.aero`. Rows are never cross-combined.
 
-A magnet set is considered residual-accepted only when **every scenario** is below this threshold. Only accepted sets participate in the “best set” comparison by scaled magnetic requirement.
+Changes that alter the physical configuration should normally be separate case files. For example, comparing 0.60 m and 1.00 m tunnels under blockage sizing changes model dimensions, area, magnet fit, mass and inertia, so use two cases.
+
+## 5. Matched aero and motion
+
+For directly specified motion, append the nine kinematic columns to the **same** scenario rows and set:
+
+```matlab
+cfg.motion.mode = "specified";
+```
+
+For harmonic motion, either leave `cfg.scenarios` empty to generate evenly spaced phases with constant aerodynamic inputs, or provide one row per aerodynamic state with `phase_rad` (or `time_s`). The harmonic motion is evaluated at that same row; no interpolation or independent timestamp synchronization occurs.
+
+## 6. Results interpretation
+
+All final loads, magnetic fields and gradients are reported in the tunnel frame T. The magnetic solver finds a low field/gradient solution for the requested wrench; it does not calculate coil current or prove that a practical coil system can generate it.

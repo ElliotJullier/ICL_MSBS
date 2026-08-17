@@ -1,20 +1,18 @@
-# Confirmed implementation decisions
+# Confirmed design decisions — v0.3.0
 
-These decisions supersede conflicting or ambiguous wording in the original implementation brief.
-
-1. The delivery does not initialise Git, create commits, or create tags. Git metadata is detected later when available.
-2. MATLAB tests are supplied but were not executed in the delivery environment. The project owner will run the first suite locally and provide output for correction.
-3. Harmonic angular displacement updates body attitude phase by phase. The inertial moment includes `I alpha + omega × (I omega)`.
-4. Time histories may provide absolute Euler attitude or `R_TB` per row.
-5. Primitive blockage uses the exact supported orthographic projection at nominal body/wind orientation.
-6. Default mass properties use the hybrid explicit-magnet plus uniformly distributed shell model.
-7. Magnet-set ranking first applies a dimensionless relative-residual threshold, then compares worst-case scaled requirement only among accepted sets.
-8. Supplied examples use a 0.60 m × 0.60 m wind tunnel and 10% blockage.
-9. Automatic magnet shrink remains an explicit user option and is zero in the supplied examples.
-10. N52 magnets from Magnet Store UK are anticipated. Delivered grade values are approximate, editable placeholders pending an exact part datasheet.
-11. No standalone software licence is imposed; the parent repository should define licensing.
-12. Six-DOF aerodynamic coefficient ranges are not Cartesian-expanded unless `combinations.allow_full_factorial_6dof=true`; correlated rows are the default recommended representation.
-13. Aerodynamic and kinematic time histories use exact timestamp matching in v0.2.0. No nearest-neighbour or hidden interpolation is performed.
-14. Direct aerodynamic wrench inputs remain physically distinct from direct inertial-demand inputs.
-15. Position/attitude aerodynamic sensitivity matrices are deferred until the perturbation vector and reference-state semantics are explicitly defined.
-16. The incremental wrench study reports magnetic-command increments around a baseline; it does not claim hardware-achievable force/moment resolution.
+1. The program is a magnetic-requirement tool, not a coil/current, controller, camera-noise or aerodynamic-solver tool.
+2. Use E/T/B frames. T is also the wind-aligned frame; no independent W frame is retained.
+3. All final force, moment, field and gradient components are reported in T.
+4. One `cfg.scenarios` row is one simultaneous physical state. No factorial case generation is performed.
+5. Aerodynamics use either six coefficients `[CD CY CL Cl_roll Cm Cn]` or a dimensional six-component wrench.
+6. Moment coefficients may simply be zero; direct wrench mode is preferred when dimensional moments are already known.
+7. Aerodynamic and motion states are coupled by being in the same row. There is no separate time-history synchronization or interpolation subsystem.
+8. Motion is none, explicitly specified kinematics, or a small-angle single-frequency harmonic helper.
+9. Actual physical motion contributes inertial demand. Sensor jitter, camera noise and controller errors are outside scope.
+10. Operating-point changes such as speed/coefficient values use scenario rows. Configuration changes that alter model geometry or mass should normally use separate case files.
+11. Automatic magnet mode compares user-specified single-magnet direction candidates. Automatic multi-magnet design generation is not implemented.
+12. Manual magnet sets may contain multiple spatially separated magnets. They share one first-order external field `B0 + G r` and one constant G.
+13. Permanent-magnet mutual interactions are not included in the net external-wrench calculation.
+14. The magnetic map remains `w = A x` with physical `x=[B0; gxx gyy gxy gxz gyz]`.
+15. `lsqminnorm` is retained, but its gradient coordinates are transformed internally to an orthonormal symmetric trace-free basis so the minimized gradient magnitude is exactly the Frobenius norm.
+16. Incremental resolution studies, aerodynamic Jacobians and user aerodynamic callback functions are not part of v0.3.0.

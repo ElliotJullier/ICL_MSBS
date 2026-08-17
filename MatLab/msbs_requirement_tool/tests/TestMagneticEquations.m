@@ -37,6 +37,18 @@ classdef TestMagneticEquations < matlab.unittest.TestCase
             direct=msbsreq.evaluateMagneticWrench(x,map.positions_T_m,map.dipoles_T_Am2);
             testCase.verifyEqual(map.A*x,direct,'AbsTol',1e-12);
         end
+        function minimumGradientUsesFrobeniusMetric(testCase)
+            set=localSet([1;0;0],[0;0;0]);
+            map=msbsreq.buildMagneticMap(set,eye(3),zeros(3,1));
+            cfg=msbsreq.resolveConfig(struct());
+            cfg.magnetic.field_scale_T=1;
+            cfg.magnetic.gradient_scale_Tpm=1;
+            scales=struct('force_N',1,'moment_Nm',1);
+            sol=msbsreq.solveMagneticRequirement(map,[1;0;0;0;0;0],scales,cfg);
+            expected=diag([1 -0.5 -0.5]);
+            testCase.verifyEqual(sol.G_Tpm,expected,'AbsTol',1e-12);
+            testCase.verifyEqual(sol.G_frobenius_Tpm,sqrt(1.5),'AbsTol',1e-12);
+        end
         function acceptedSetRankingUsesEffort(testCase)
             cfg=msbsreq.resolveConfig(struct());
             T=localSummaryTable(["A";"B"],[2;1],[1e-8;1e-8]);

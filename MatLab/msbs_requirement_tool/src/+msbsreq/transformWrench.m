@@ -3,7 +3,7 @@ function wrenchTAtC = transformWrench(force, momentAtP, sourceFrame, referencePo
 arguments
     force (3,1) double {mustBeFinite}
     momentAtP (3,1) double {mustBeFinite}
-    sourceFrame (1,1) string {mustBeMember(sourceFrame,["E","T","B","W"])}
+    sourceFrame (1,1) string {mustBeMember(sourceFrame,["E","T","B"])}
     referencePointB (3,1) double {mustBeFinite}
     centreOfMassB (3,1) double {mustBeFinite}
     frames struct

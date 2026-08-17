@@ -10,7 +10,7 @@ cfg.tunnel.cross_section.type = "rectangular";
 cfg.tunnel.cross_section.width_m = 0.60;
 cfg.tunnel.cross_section.height_m = 0.60;
 cfg.tunnel.cross_section.diameter_m = [];
-cfg.tunnel.speed = msbsreq.rangeSpec(0, [], "absolute");
+cfg.tunnel.speed_mps = 0;
 cfg.tunnel.air.mode = "density";
 cfg.tunnel.air.rho_kgm3 = 1.225;
 cfg.tunnel.air.pressure_Pa = 101325;
@@ -22,9 +22,6 @@ cfg.frames.tunnel_to_earth.yaw_pitch_roll_deg = [0 0 0];
 cfg.frames.body_to_tunnel.sequence = "ZYX";
 cfg.frames.body_to_tunnel.yaw_pitch_roll_deg = [0 0 0];
 cfg.frames.body_origin_T_m = [0;0;0];
-cfg.frames.wind_to_tunnel.R_TW = eye(3);
-cfg.frames.body_attitude_cases = struct([]);
-cfg.frames.wind_orientation_cases = struct([]);
 
 cfg.geometry.type = "sphere";
 cfg.geometry.sizing.mode = "blockage";
@@ -67,36 +64,33 @@ cfg.mass.total_mass_override_kg = [];
 cfg.mass.centre_of_mass_override_B_m = [];
 cfg.mass.inertia_override_B_kgm2 = [];
 
-cfg.aero.mode = "legacy_3coeff";
-cfg.aero.CD = msbsreq.rangeSpec(0, [], "absolute");
-cfg.aero.CY = msbsreq.rangeSpec(0, [], "absolute");
-cfg.aero.CL = msbsreq.rangeSpec(0, [], "absolute");
-cfg.aero.Cl = msbsreq.rangeSpec(0, [], "absolute");
-cfg.aero.Cm = msbsreq.rangeSpec(0, [], "absolute");
-cfg.aero.Cn = msbsreq.rangeSpec(0, [], "absolute");
-cfg.aero.direct_wrench_cases = table();
-cfg.aero.wrench_time_history = table();
-cfg.aero.time_sync.mode = "exact";
-cfg.aero.time_sync.tolerance_s = 1e-9;
+% Aerodynamic source. Coefficients are defined in the tunnel/wind-aligned axes.
+cfg.aero.mode = "coefficients";
+cfg.aero.CD = 0;
+cfg.aero.CY = 0;
+cfg.aero.CL = 0;
+cfg.aero.Cl_roll = 0;
+cfg.aero.Cm = 0;
+cfg.aero.Cn = 0;
+cfg.aero.direct_wrench_frame = "T";
 
+% One table row is one simultaneous physical state. Empty means one nominal
+% static row, except harmonic motion where samples_per_cycle rows are generated.
+cfg.scenarios = table();
+cfg.max_scenarios = 4096;
+
+% Motion is either absent, explicitly specified in cfg.scenarios, or generated
+% from a small-angle single-frequency harmonic definition.
 cfg.motion.mode = "none";
-cfg.motion.direct_kinematics_cases = table();
+cfg.motion.frame = "T";
 cfg.motion.harmonic.frequency_Hz = 1.0;
 cfg.motion.harmonic.translation_amplitude_m = [0;0;0];
 cfg.motion.harmonic.translation_phase_rad = [0;0;0];
 cfg.motion.harmonic.angular_amplitude_rad = [0;0;0];
 cfg.motion.harmonic.angular_phase_rad = [0;0;0];
 cfg.motion.harmonic.samples_per_cycle = 72;
-cfg.motion.time_history = table();
-cfg.motion.direct_required_wrench = table();
 
 cfg.additional_wrenches = table();
-
-cfg.combinations.strategy = "full_factorial";
-cfg.combinations.include_nominal_case = true;
-cfg.combinations.max_cases = 4096;
-cfg.combinations.user_scenarios = table();
-cfg.combinations.allow_full_factorial_6dof = false;
 
 cfg.magnetic.model = "source_free_first_order";
 cfg.magnetic.field_scale_T = 0.10;
@@ -107,9 +101,6 @@ cfg.magnetic.advisory_B_max_T = [];
 cfg.magnetic.advisory_G_max_Tpm = [];
 cfg.magnetic.minimum_force_scale_N = 1e-9;
 cfg.magnetic.minimum_moment_scale_Nm = 1e-9;
-
-cfg.requirement_resolution.enable = false;
-cfg.requirement_resolution.delta_wrench_cases = table();
 
 cfg.validation.rotation_tolerance = 1e-10;
 cfg.validation.gradient_tolerance = 1e-10;

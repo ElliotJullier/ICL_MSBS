@@ -5,9 +5,9 @@ arguments
     tunnel (1,1) struct
 end
 
-R_TB = cfg.frames.body_attitude_cases(1).R_TB;
-R_TW = cfg.frames.wind_orientation_cases(1).R_TW;
-flowNormalB = R_TB.' * R_TW * [1;0;0];
+R_TB = cfg.frames.R_TB_nominal;
+% Wind and tunnel axes are identical in v0.3.0; +x_T is downstream.
+flowNormalB = R_TB.' * [1;0;0];
 flowNormalB = flowNormalB / norm(flowNormalB);
 
 type = cfg.geometry.type;
@@ -51,7 +51,7 @@ geometry.metadata = struct( ...
     'sizing_mode', sizing.mode, ...
     'flow_normal_B', flowNormalB, ...
     'blockage_orientation_note', ...
-    "Nominal orthographic projection at the first configured body and wind orientation.");
+    "Nominal orthographic projection at the configured nominal body attitude relative to +x_T flow.");
 end
 
 function [shape, area] = localUnitShape(type, sizing, n)
@@ -241,17 +241,13 @@ switch type
     case "sphere"
         value = shape.diameter_m;
     case "custom"
-        if ~isfield(shape,'reference_span_m') || isempty(shape.reference_span_m)
-            if cfg.aero.mode=="coefficients_6dof"
-                error('msbsreq:MissingReferenceSpan', ...
-                    ['Custom geometry using six aerodynamic coefficients requires ', ...
-                     'geometry.sizing.custom.reference_span_m, or set ', ...
-                     'geometry.aero_reference_span.mode="manual".']);
-            end
-            value = NaN;
-            return
+        if isfield(shape,'reference_span_m') && ~isempty(shape.reference_span_m)
+            value = shape.reference_span_m;
+        else
+            % Default to the body-y outer extent; override manually when the
+            % aerodynamic coefficient source uses a different reference span.
+            value = outerDimensions(2);
         end
-        value = shape.reference_span_m;
     otherwise
         % Body-y extent is the documented default span for primitive geometries.
         value = outerDimensions(2);

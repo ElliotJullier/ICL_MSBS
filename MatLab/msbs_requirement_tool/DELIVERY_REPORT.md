@@ -1,26 +1,22 @@
-# Feature delivery report — version 0.2.0
+# Feature delivery report — version 0.3.0
 
 ## Basis
 
-This release implements the supplied aerodynamic-wrench extension specification, with conservative choices where the proposed interface was ambiguous.
+This release simplifies the v0.2.0 aerodynamic/motion extension after review of the intended MSBS requirements workflow.
 
 ## Implemented
 
-1. Backward-compatible `legacy_3coeff` aerodynamic mode.
-2. Six-DOF `[CD CY CL Cl Cm Cn]` coefficient mode using reference dimensions `[b c b]`.
-3. Correlated user-defined six-DOF scenarios and metadata passthrough.
-4. Direct dimensional aerodynamic wrench cases in W/T/B frames with reference-point shifting.
-5. Aerodynamic wrench time histories that coexist with motion time histories using exact timestamp matching.
-6. Baseline-plus-perturbation force/moment requirement studies with independent linear-increment consistency checks.
-7. Updated template, user guide, technical reference, changelog, exports, and automated tests.
-
-## Deliberate decisions
-
-- Six-coefficient extrema are not expanded into a Cartesian product unless `combinations.allow_full_factorial_6dof=true`.
-- Time histories are not silently interpolated; v0.2.0 requires exact timestamps within a configurable tolerance.
-- Position/attitude aerodynamic sensitivity matrices are deferred because the supplied proposal does not yet define the perturbation vector/reference state to which the matrices should be applied.
-- The optional user-supplied aerodynamic model function remains a later extension, as proposed.
+1. One coefficient aerodynamic mode with `[CD CY CL Cl_roll Cm Cn]`; all unused channels may be zero.
+2. Direct dimensional aerodynamic wrench mode integrated with the same motion state.
+3. One explicit scenario table: one row equals one simultaneous physical state.
+4. Removal of factorial coefficient combinations and separate aero/motion synchronization machinery.
+5. Motion modes reduced to `none`, `specified`, and a small-angle harmonic helper.
+6. Frames reduced to E/T/B, with T also serving as the wind-aligned reporting frame.
+7. Removal of incremental resolution, direct inertial-wrench, camera/jitter, aerodynamic-Jacobian and callback concepts from the core interface.
+8. Manual multiple magnets remain spatially resolved under one common first-order external field.
+9. Magnetic minimum norm corrected so the gradient objective is the physical Frobenius norm using an orthonormal symmetric trace-free basis.
+10. Documentation and automated tests updated for the streamlined interface.
 
 ## Runtime status
 
-MATLAB and GNU Octave are unavailable in the packaging environment. Static checks and source-level audits were performed, but the project owner's local `runAllTests()` remains the authoritative runtime validation.
+MATLAB is unavailable in the packaging environment. The patch is generated against master commit `6d29e4c3b7629191d980eb50f0ceb744ab9061b4`; the project owner's local `runAllTests()` remains the authoritative runtime validation.
