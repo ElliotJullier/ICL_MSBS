@@ -11,7 +11,7 @@ which runStudy -all
 which msbsreq.buildScenarioTable -all
 ```
 
-All paths should point to the same `msbs_requirement_tool` folder and `VERSION` should report `0.3.0`.
+All paths should point to the same `msbs_requirement_tool` folder and `VERSION` should report `0.4.0`.
 
 ## Invalid rotation
 

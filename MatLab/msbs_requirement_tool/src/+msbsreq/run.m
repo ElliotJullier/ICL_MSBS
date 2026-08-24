@@ -12,6 +12,7 @@ localPrintValidation(cfg,warnings);
 
 tunnel=msbsreq.buildTunnel(cfg);
 geometry=msbsreq.buildGeometry(cfg,tunnel);
+costMetrics=msbsreq.buildMagneticCostMetrics(geometry,tunnel,cfg);
 if geometry.nominal_blockage_ratio>cfg.validation.blockage_advisory_limit
     warnings(end+1,1)="Actual nominal blockage exceeds the configured advisory limit.";
 end
@@ -36,6 +37,7 @@ for iSet=1:numel(magnetSets)
         index=index+1;
         loads=msbsreq.calculateRequiredMagneticWrench(cfg,tunnel,geometry,scenarios(iScenario,:),massProperties(iSet));
         map=msbsreq.buildMagneticMap(magnetSets(iSet),loads.scenario.R_TB,massProperties(iSet).centre_of_mass_B_m);
+        map.coupling=msbsreq.analyseMagneticCoupling(map,costMetrics.primary,cfg);
         records(index).magnet_set=magnetSets(iSet);
         records(index).mass_properties=massProperties(iSet);
         records(index).loads=loads;
@@ -49,11 +51,33 @@ forceScale=max(cfg.magnetic.minimum_force_scale_N,max(vecnorm(requiredWrenches(1
 momentScale=max(cfg.magnetic.minimum_moment_scale_Nm,max(vecnorm(requiredWrenches(4:6,:),2,1)));
 scales=struct('force_N',forceScale,'moment_Nm',momentScale);
 for i=1:recordCount
-    records(i).solution=msbsreq.solveMagneticRequirement(records(i).map, ...
-        records(i).loads.required_magnetic_wrench_T,scales,cfg);
+    primarySolution=msbsreq.solveMagneticRequirement(records(i).map, ...
+        records(i).loads.required_magnetic_wrench_T,scales,cfg,costMetrics.primary);
+    primarySolution.coupling_class=records(i).map.coupling.classification;
+    primarySolution.coupling_ratio=records(i).map.coupling.ratio;
+    records(i).solution=primarySolution;
+    records(i).sensitivity_solutions=struct([]);
+    if cfg.magnetic.cost.sensitivity_when_significant && records(i).map.coupling.classification=="significant"
+        entries=repmat(struct('metric',struct(),'solution',struct()),numel(costMetrics.sensitivity),1);
+        for iMetric=1:numel(costMetrics.sensitivity)
+            metric=costMetrics.sensitivity(iMetric);
+            if metric.id==costMetrics.primary.id
+                sol=primarySolution;
+            else
+                sol=msbsreq.solveMagneticRequirement(records(i).map, ...
+                    records(i).loads.required_magnetic_wrench_T,scales,cfg,metric);
+                sol.coupling_class=records(i).map.coupling.classification;
+                sol.coupling_ratio=records(i).map.coupling.ratio;
+            end
+            entries(iMetric).metric=metric;
+            entries(iMetric).solution=sol;
+        end
+        records(i).sensitivity_solutions=entries;
+    end
 end
 
 results=msbsreq.buildResultTable(records);
+sensitivityResults=msbsreq.buildSensitivityResultTable(records);
 summary=msbsreq.summariseResults(results,cfg);
 warnings=[warnings(:);localNumericalWarnings(records,geometry,cfg)];
 warnings=unique(warnings(strlength(warnings)>0),'stable');
@@ -70,6 +94,8 @@ study.magnet_sets=magnetSets;
 study.scenarios=scenarios;
 study.records=records;
 study.results=results;
+study.sensitivity_results=sensitivityResults;
+study.magnetic_cost_metrics=costMetrics;
 study.summary=summary;
 study.warnings=warnings;
 study.output_folder="";
@@ -87,7 +113,7 @@ tf=istable(T)&&~isempty(T)&&all(ismember({'yaw_deg','pitch_deg','roll_deg'},T.Pr
 end
 
 function record=localEmptyRecord()
-record=struct('magnet_set',struct(),'mass_properties',struct(),'loads',struct(),'map',struct(),'solution',struct());
+record=struct('magnet_set',struct(),'mass_properties',struct(),'loads',struct(),'map',struct(),'solution',struct(),'sensitivity_solutions',struct([]));
 end
 
 function warnings=localNumericalWarnings(records,geometry,cfg)
@@ -101,6 +127,8 @@ for id=setIds(:).'
     if min(ranks)<6,warnings(end+1,1)="Magnet set "+id+" has magnetic-map rank below six; some wrench directions can be uncontrollable.";end
     if max(conditions)>cfg.magnetic.condition_warning_threshold,warnings(end+1,1)="Magnet set "+id+" has a poorly conditioned magnetic map under at least one attitude.";end
     if max(residuals)>cfg.magnetic.acceptance_relative_residual,warnings(end+1,1)="Magnet set "+id+" exceeds the configured dimensionless residual-acceptance threshold.";end
+    couplingClasses=string(arrayfun(@(r)r.map.coupling.classification,records(indices),'UniformOutput',false));
+    if any(couplingClasses=="significant"),warnings(end+1,1)="Magnet set "+id+" has significant gradient-to-moment coupling in at least one scenario; magnetic-cost sensitivity solutions were evaluated when enabled.";end
     maxB=max(arrayfun(@(r)r.solution.B_local_max_norm_T,records(indices)));
     maxG=max(arrayfun(@(r)r.solution.G_frobenius_Tpm,records(indices)));
     if ~isempty(cfg.magnetic.advisory_B_max_T)&&maxB>cfg.magnetic.advisory_B_max_T,warnings(end+1,1)="Magnet set "+id+" exceeds the user advisory field limit.";end
@@ -174,10 +202,10 @@ fprintf('  Dipole magnitude, first set: %.6g A m^2\n',sum([study.magnet_sets(1).
 fprintf('  Worst required force: %.6g N\n',max(S.maximum_force_norm_N));
 fprintf('  Worst required moment: %.6g N m\n',max(S.maximum_moment_norm_Nm));
 for i=1:height(S)
-    fprintf('  %s: max local B %.6g T, max ||G||F %.6g T/m, max relative residual %.3g\n', ...
-        S.magnet_set_name(i),S.maximum_local_B_norm_T(i),S.maximum_G_frobenius_Tpm(i),S.maximum_relative_scaled_residual(i));
+    fprintf('  %s: max local B %.6g T, max ||G||F %.6g T/m, max RMS-field cost %.6g T, max relative residual %.3g\n', ...
+        S.magnet_set_name(i),S.maximum_local_B_norm_T(i),S.maximum_G_frobenius_Tpm(i),S.maximum_magnetic_cost_rms_T(i),S.maximum_relative_scaled_residual(i));
 end
-if strlength(study.summary.best_magnet_set_id)>0,fprintf('  Best residual-accepted set: %s\n',study.summary.best_magnet_set_name);else,fprintf('  Best set: none met the residual threshold\n');end
+if strlength(study.summary.best_magnet_set_id)>0,fprintf('  Best fixed residual-accepted set: %s\n',study.summary.best_magnet_set_name);else,fprintf('  Best fixed set: none met the residual threshold\n');end
 if strlength(study.output_folder)>0,fprintf('  Results: %s\n',char(study.output_folder));end
 fprintf('\n');
 end

@@ -27,7 +27,8 @@ classdef TestRegressionSphere < matlab.unittest.TestCase
             map=msbsreq.buildMagneticMap(sets(1),loads.scenario.R_TB,mp.centre_of_mass_B_m);
             scales=struct('force_N',norm(loads.required_magnetic_wrench_T(1:3)), ...
                 'moment_Nm',1e-9);
-            sol=msbsreq.solveMagneticRequirement(map,loads.required_magnetic_wrench_T,scales,resolved);
+            metrics=msbsreq.buildMagneticCostMetrics(g,t,resolved);
+            sol=msbsreq.solveMagneticRequirement(map,loads.required_magnetic_wrench_T,scales,resolved,metrics.primary);
             testCase.verifyEqual(g.shape.diameter_m,0.21409489393833253,'RelTol',1e-11);
             testCase.verifyEqual(sets(1).magnets.volume_m3,0.001888587222247466,'RelTol',1e-11);
             testCase.verifyEqual(mp.total_mass_kg,18.413725416912794,'RelTol',1e-11);

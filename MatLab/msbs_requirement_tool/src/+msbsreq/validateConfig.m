@@ -1,5 +1,5 @@
 function warnings = validateConfig(cfg, projectRoot)
-%VALIDATECONFIG Validate the streamlined v0.3.0 configuration.
+%VALIDATECONFIG Validate the streamlined v0.4.0 configuration.
 arguments
     cfg (1,1) struct
     projectRoot (1,1) string
@@ -162,8 +162,23 @@ if ~isempty(cfg.additional_wrenches)
 end
 
 mustBeMember(cfg.magnetic.model,["source_free_first_order"]);
-localPositive(cfg.magnetic.field_scale_T,'field scale');
-localPositive(cfg.magnetic.gradient_scale_Tpm,'gradient scale');
+mustBeMember(string(cfg.magnetic.cost.primary_mode),["model_characteristic_cube_rms"]);
+if ~(islogical(cfg.magnetic.cost.sensitivity_when_significant)&&isscalar(cfg.magnetic.cost.sensitivity_when_significant))
+    error('msbsreq:InvalidMagneticSensitivityFlag','sensitivity_when_significant must be a logical scalar.');
+end
+localPositiveVector(cfg.magnetic.cost.sensitivity_gradient_weight_factors,'magnetic sensitivity gradient weights');
+localPositiveVector(cfg.magnetic.cost.sensitivity_tunnel_length_fractions,'magnetic sensitivity tunnel fractions');
+if any(cfg.magnetic.cost.sensitivity_tunnel_length_fractions>=1)
+    error('msbsreq:InvalidMagneticTunnelFraction','Magnetic sensitivity tunnel fractions must lie in (0,1).');
+end
+zeroRatio=cfg.magnetic.coupling.zero_ratio_tolerance;
+smallRatio=cfg.magnetic.coupling.insignificant_ratio;
+if ~(isscalar(zeroRatio)&&isfinite(zeroRatio)&&zeroRatio>=0)
+    error('msbsreq:InvalidMagneticCouplingTolerance','zero_ratio_tolerance must be finite and nonnegative.');
+end
+if ~(isscalar(smallRatio)&&isfinite(smallRatio)&&smallRatio>zeroRatio)
+    error('msbsreq:InvalidMagneticCouplingTolerance','insignificant_ratio must be finite and greater than zero_ratio_tolerance.');
+end
 localPositive(cfg.magnetic.condition_warning_threshold,'condition warning threshold');
 localPositive(cfg.magnetic.minimum_force_scale_N,'minimum force scale');
 localPositive(cfg.magnetic.minimum_moment_scale_Nm,'minimum moment scale');
@@ -247,6 +262,12 @@ if cfg.aero.mode=="direct_wrench"
         end
         for i=1:height(T),localThreeVector(T.aero_reference_point_B_m{i},'aerodynamic reference point');end
     end
+end
+end
+
+function localPositiveVector(value,name)
+if ~(isnumeric(value)&&isvector(value)&&~isempty(value)&&all(isfinite(value))&&all(value>0))
+    error('msbsreq:InvalidPositiveVector','%s must be a nonempty vector of positive finite values.',name);
 end
 end
 

@@ -35,6 +35,19 @@ classdef TestMagnetSizing < matlab.unittest.TestCase
             expected=sets(1).magnets.mass_kg*0.01/mp.total_mass_kg;
             testCase.verifyEqual(mp.centre_of_mass_B_m(1),expected,'RelTol',1e-12);
         end
+        function significantCouplingProducesCompactSensitivityTable(testCase)
+            cfg=case_test_equivalence();cfg.output.enable=false;cfg.visualisation.enable=false;
+            m.name="offset";m.dimensions_local_m=[0.03;0.02;0.02];m.centre_B_m=[0;0.08;0];
+            m.R_BM=eye(3);m.grade="N52";m.magnetisation_direction_M=[1;0;0];
+            m.effective_magnetisation_factor=1;m.dipole_moment_override_Am2=[];m.density_override_kgm3=[];
+            cfg.magnets.mode="manual_sets";cfg.magnets.sets=struct([]);
+            cfg.magnets.sets(1).name="offset_single";cfg.magnets.sets(1).magnets=m;
+            study=runStudy(cfg);
+            testCase.verifyEqual(study.results.coupling_class(1),"significant");
+            testCase.verifyGreaterThanOrEqual(height(study.sensitivity_results),6);
+            testCase.verifyTrue(all(study.sensitivity_results.scenario_id==study.results.scenario_id(1)));
+            testCase.verifyTrue(any(study.sensitivity_results.metric_id=="model_characteristic_rms"));
+        end
         function manualTwoMagnetStudyRuns(testCase)
             cfg=case_test_equivalence();
             m1.name="front";m1.dimensions_local_m=[0.04;0.02;0.02];m1.centre_B_m=[0.04;0;0];

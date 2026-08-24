@@ -20,7 +20,7 @@ results = runAllTests();
 study = runStudy("case_minimal_example");
 ```
 
-Version 0.3.0 deliberately simplifies the v0.2.0 input system and changes the magnetic minimum-norm objective so the gradient contribution is the physical Frobenius norm.
+Version 0.4.0 retains the streamlined simultaneous-state workflow and replaces the arbitrary field/gradient scaling ratio with a model-scale RMS-field cost. It also reports gradient-to-moment coupling, runs compact reference-length sensitivity solves only when coupling is significant, and exports both fixed-configuration and independent-scenario rankings.
 
 ## Documentation
 

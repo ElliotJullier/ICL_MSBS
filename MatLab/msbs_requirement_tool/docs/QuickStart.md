@@ -32,7 +32,7 @@ The normal workflow is:
 2. Choose `cfg.aero.mode = "coefficients"` or `"direct_wrench"`.
 3. Choose `cfg.motion.mode = "none"`, `"specified"` or `"harmonic"`.
 4. Put simultaneous operating states in `cfg.scenarios`. One row is one physical state.
-5. Run the study and inspect `scenario_results.csv`, `magnet_set_summary.csv` and `run_summary.md`.
+5. Run the study and inspect `scenario_results.csv`, `scenario_extrema.csv`, the fixed/independent ranking CSVs, `magnet_set_summary.csv` and `run_summary.md`. Significant coupling also produces `magnetic_cost_sensitivity.csv`.
 
 ## 4. Exact operating-point sweeps
 

@@ -10,7 +10,7 @@ Three right-handed frames are used:
 - **T** — tunnel and MSBS reporting frame; `+x_T` is downstream wind direction.
 - **B** — body-fixed frame for geometry, magnets and attitude.
 
-Wind and tunnel axes are deliberately identical in v0.3.0, so no independent W frame is maintained. A vertical or inclined tunnel is represented by rotating T relative to E.
+Wind and tunnel axes are deliberately identical in v0.4.0, so no independent W frame is maintained. A vertical or inclined tunnel is represented by rotating T relative to E.
 
 For a vector fixed in B,
 
@@ -192,26 +192,100 @@ For one centred +x dipole of magnitude m,
 
 Therefore torque about x is uncontrollable for that single centred dipole. A +z dipole analogously cannot generate torque about z. Multiple separated/nonparallel magnets change A through their different dipoles and moment arms.
 
-## 9. Minimum norm and Frobenius gradient objective
+## 9. Magnetic cost, coupling and minimum-norm solve
 
-The six wrench equations and eight magnetic parameters are generally underdetermined. MATLAB `lsqminnorm` is therefore used, but v0.3.0 no longer minimizes the raw five independent gradient coordinates.
+The six wrench equations and eight magnetic parameters are generally underdetermined. The code therefore retains MATLAB `lsqminnorm`, but the physical cost is supplied by a change of variables rather than by minimising the raw physical coordinate vector.
 
-The solver internally maps the five gradient degrees of freedom onto an orthonormal symmetric trace-free basis. If q contains those five coordinates,
+### 9.1 STF gradient coordinates
 
-\[
-\|\mathbf q\|_2=\|\mathbf G\|_F.
-\]
-
-The dimensionally scaled objective is therefore
+The source-free first-order model constructs
 
 \[
-\min\left(
-\left\|\frac{\mathbf B_0}{B_s}\right\|_2^2+
-\left\|\frac{\mathbf G}{G_s}\right\|_F^2
-\right)^{1/2},
+G=G^T,\qquad \mathrm{tr}(G)=0,
 \]
 
-subject to reproducing the requested wrench in the scaled least-squares sense. `lsqminnorm` is the numerical solver; the Frobenius construction defines the physically meaningful gradient norm that solver minimizes.
+leaving five independent gradient degrees of freedom. They are re-expressed in an orthonormal symmetric trace-free basis,
+
+\[
+G=\sum_{a=1}^5 q_a E_a,\qquad E_a:E_b=\delta_{ab},
+\]
+
+so that
+
+\[
+\|q\|_2=\|G\|_F.
+\]
+
+The symmetry/trace constraints are enforced by construction; the orthonormal basis is then used to give the solver a coordinate-independent Frobenius gradient magnitude.
+
+### 9.2 Primary RMS-field cost
+
+Let `Lref=max(geometry.outer_dimensions_B_m)`. Define a centred isotropic cube of side `Lref` about the instantaneous model CoM. Because its first spatial moment is zero and its second moment is `(Lref^2/12)I`, the mean-square affine field is
+
+\[
+J^2=\frac1V\int_V \|B_0+Gr\|^2dV
+=\|B_0\|^2+\frac{L_{ref}^2}{12}\|G\|_F^2.
+\]
+
+The equivalent mean vacuum energy-density proxy is
+
+\[
+\bar u=\frac{J^2}{2\mu_0}.
+\]
+
+The reference cube is a regularisation region chosen from the model scale. It is not a claim that the whole real magnetic field or actual coil energy is described by a first-order field over that volume.
+
+Define `ell=Lref/sqrt(12)` and the solver coordinate
+
+\[
+y=[B_0;\;ell\,q].
+\]
+
+Then `||y||2=J`. If `P` maps STF coordinates `q` to the five physical gradient parameters and `Tbasis=blkdiag(I3,P)`, the physical magnetic vector is
+
+\[
+x=T_{basis}\,\mathrm{diag}(I_3,ell^{-1}I_5)y.
+\]
+
+The wrench equations are scaled separately by the study-wide force and moment magnitudes using `Dw`. The solved system is therefore
+
+\[
+D_w A T_{basis}T_{cost}y \approx D_w w_{req}.
+\]
+
+`lsqminnorm` first minimises the scaled wrench residual and, among equivalent least-squares solutions, minimises `||y||2=J`.
+
+### 9.3 Force/torque coupling diagnostic
+
+In STF coordinates partition the map as
+
+\[
+\begin{bmatrix}F\\M\end{bmatrix}=
+\begin{bmatrix}A_{FB}&A_{FG}\\A_{MB}&A_{MG}\end{bmatrix}
+\begin{bmatrix}B_0\\q\end{bmatrix}.
+\]
+
+The point-dipole equations guarantee `A_FB=0`. `A_MG=0` for a centred magnet but is generally nonzero for offset/separated magnets. To compare `A_MG` with `A_MB` without mixing field and gradient units, the gradient columns are divided by the primary `ell`; both moment blocks then correspond to moment authority per unit RMS-field cost. The dimensionless coupling ratio is
+
+\[
+\rho_c=\frac{\|A_{MG}/ell\|_F}{\|A_{MB}\|_F}.
+\]
+
+The configured thresholds classify the map as zero, insignificant or significant. The full coupled map is always solved; classification only controls reporting and whether alternate cost sensitivities are run. If `A_MG=0`, the force/gradient and moment/field subproblems are independent, so changing only the scalar relative B/G weighting cannot change the physical minimum-residual solution.
+
+### 9.4 Significant-coupling sensitivity suite
+
+For significant maps the default alternate reference lengths are model multipliers 0.01, 0.1 and 10 around the primary factor 1, plus cube sides 0.2 and 0.5 times `sqrt(tunnel area)`. Each alternate solution is another `lsqminnorm` solve using the same `A`, `w_req` and wrench scaling; only `ell` changes. These compact alternatives are stored separately from the primary pointwise result.
+
+### 9.5 Ranking
+
+For primary cost `J_jk`, fixed-hardware ranking uses
+
+\[
+\arg\min_j\max_k J_{jk},
+\]
+
+subject to all scenarios meeting the residual threshold for set `j`. Independent-scenario ranking instead uses `min_j J_jk` separately for each scenario and then orders those best-achievable scenario costs from largest to smallest. Both rankings retain the actual scenario IDs and never combine component extrema into a synthetic wrench.
 
 ## 10. Boundary to future coil design
 

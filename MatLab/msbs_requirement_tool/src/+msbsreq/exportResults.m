@@ -42,6 +42,12 @@ localWriteJson(fullfile(outputFolder,'config_resolved.json'),study.config_resolv
 localWriteJson(fullfile(outputFolder,'run_metadata.json'),study.metadata);
 writetable(study.results,fullfile(outputFolder,'scenario_results.csv'));
 writetable(study.summary.magnet_set_summary,fullfile(outputFolder,'magnet_set_summary.csv'));
+writetable(study.summary.scenario_extrema,fullfile(outputFolder,'scenario_extrema.csv'));
+writetable(study.summary.fixed_configuration_ranking,fullfile(outputFolder,'fixed_configuration_ranking.csv'));
+writetable(study.summary.independent_scenario_ranking,fullfile(outputFolder,'independent_scenario_ranking.csv'));
+if ~isempty(study.sensitivity_results) && height(study.sensitivity_results)>0
+    writetable(study.sensitivity_results,fullfile(outputFolder,'magnetic_cost_sensitivity.csv'));
+end
 
 study.output_folder=string(outputFolder); %#ok<NASGU>
 save(fullfile(outputFolder,'results_full.mat'),'study','-v7.3');
@@ -59,7 +65,7 @@ if study.config_resolved.visualisation.enable
         summaryTable=study.summary.magnet_set_summary;
         for i=1:height(summaryTable)
             setId=summaryTable.magnet_set_id(i);
-            scenarioId=summaryTable.maximum_effort_scenario_id(i);
+            scenarioId=summaryTable.maximum_magnetic_cost_scenario_id(i);
             record=localFindRecord(study.records,setId,scenarioId);
             stem="worst_case_"+localSafeName(setId);
             fig=msbsreq.plotScenario(record);

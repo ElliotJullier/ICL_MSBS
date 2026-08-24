@@ -29,7 +29,12 @@ for i=1:n
     row.Bx_T=sol.B0_T(1);row.By_T=sol.B0_T(2);row.Bz_T=sol.B0_T(3);
     row.gxx_Tpm=G(1,1);row.gyy_Tpm=G(2,2);row.gzz_Tpm=G(3,3);row.gxy_Tpm=G(1,2);row.gxz_Tpm=G(1,3);row.gyz_Tpm=G(2,3);
     row.B_norm_T=sol.B0_norm_T;row.B_local_max_norm_T=sol.B_local_max_norm_T;row.G_frobenius_Tpm=sol.G_frobenius_Tpm;
-    row.G_max_abs_Tpm=sol.G_max_abs_component_Tpm;row.scaled_solution_norm=sol.scaled_solution_norm;
+    row.G_max_abs_Tpm=sol.G_max_abs_component_Tpm;
+    row.magnetic_cost_metric_id=sol.magnetic_cost_metric_id;
+    row.magnetic_reference_cube_side_m=sol.reference_cube_side_m;
+    row.magnetic_cost_rms_T=sol.magnetic_cost_rms_T;
+    row.mean_vacuum_energy_density_Jpm3=sol.mean_vacuum_energy_density_Jpm3;
+    row.coupling_class=rec.map.coupling.classification;row.coupling_ratio=rec.map.coupling.ratio;
     row.force_residual_norm_N=sol.force_residual_norm_N;row.moment_residual_norm_Nm=sol.moment_residual_norm_Nm;
     row.relative_scaled_residual=sol.relative_scaled_residual;row.controllable=sol.controllable;
     row.map_rank=sol.rank;row.map_condition_number=sol.condition_number;
@@ -79,6 +84,8 @@ row=struct('scenario_id',"",'scenario_name',"",'magnet_set_id',"",'magnet_set_na
 'Fx_mag_req_N',NaN,'Fy_mag_req_N',NaN,'Fz_mag_req_N',NaN,'Mx_mag_req_Nm',NaN,'My_mag_req_Nm',NaN,'Mz_mag_req_Nm',NaN, ...
 'force_req_norm_N',NaN,'moment_req_norm_Nm',NaN,'Bx_T',NaN,'By_T',NaN,'Bz_T',NaN, ...
 'gxx_Tpm',NaN,'gyy_Tpm',NaN,'gzz_Tpm',NaN,'gxy_Tpm',NaN,'gxz_Tpm',NaN,'gyz_Tpm',NaN, ...
-'B_norm_T',NaN,'B_local_max_norm_T',NaN,'G_frobenius_Tpm',NaN,'G_max_abs_Tpm',NaN,'scaled_solution_norm',NaN, ...
+'B_norm_T',NaN,'B_local_max_norm_T',NaN,'G_frobenius_Tpm',NaN,'G_max_abs_Tpm',NaN, ...
+'magnetic_cost_metric_id',"",'magnetic_reference_cube_side_m',NaN,'magnetic_cost_rms_T',NaN,'mean_vacuum_energy_density_Jpm3',NaN, ...
+'coupling_class',"",'coupling_ratio',NaN, ...
 'force_residual_norm_N',NaN,'moment_residual_norm_Nm',NaN,'relative_scaled_residual',NaN,'controllable',false,'map_rank',NaN,'map_condition_number',NaN);
 end

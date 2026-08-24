@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0 — Coupling-aware magnetic cost and dual ranking
+
+- Replaced the arbitrary `field_scale_T` / `gradient_scale_Tpm` objective with an RMS affine-field cost over a centred isotropic reference cube whose side is the largest resolved model dimension.
+- Retained `lsqminnorm`, using the STF coordinate transform and a cost-coordinate change so the solver norm is the selected RMS-field metric.
+- Added mean vacuum magnetic-energy-density proxy `J^2/(2*mu0)` for each primary solution.
+- Added force/torque map partitioning diagnostics and dimensionless gradient-to-moment coupling classification (`zero`, `insignificant`, `significant`).
+- Added compact alternate reference-length solves only for significantly coupled records: model-weight factors 0.01, 0.1, 1 and 10 plus tunnel-characteristic fractions 0.2 and 0.5.
+- Kept the primary pointwise result table one row per scenario/magnet set; sensitivity solutions are exported separately.
+- Added absolute component-extrema reporting with the actual scenario ID/name that generated each extreme; no synthetic combined worst-case wrench is created.
+- Added both fixed-configuration minimax ranking and independent-scenario best-set ranking.
+- Added dedicated CSV exports for scenario extrema, both ranking views and significant-coupling sensitivity solutions.
+- Clarified that future coil/current optimisation may minimise current, stored inductive energy, copper loss or voltage-related hardware objectives, but remains outside this tool.
+
 ## 0.3.0 — Streamlined simultaneous-state interface and Frobenius magnetic objective
 
 - Replaced legacy/factorial aerodynamic interfaces with one six-channel coefficient mode and one direct dimensional-wrench mode.

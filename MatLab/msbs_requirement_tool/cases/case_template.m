@@ -1,5 +1,5 @@
 function cfg = case_template()
-%CASE_TEMPLATE Streamlined v0.3.0 MSBS requirement-study template.
+%CASE_TEMPLATE Streamlined v0.4.0 MSBS requirement-study template.
 % Copy this file, rename the file/function identically, and edit USER INPUTS.
 
 %% USER INPUT 1 — Case identity
@@ -107,8 +107,15 @@ cfg.additional_wrenches = table();
 
 %% USER INPUT 11 — Magnetic requirement solve
 cfg.magnetic.model = "source_free_first_order";
-cfg.magnetic.field_scale_T = 0.10;
-cfg.magnetic.gradient_scale_Tpm = 1.0;
+cfg.magnetic.cost.primary_mode = "model_characteristic_cube_rms";
+% Primary cost is RMS field over a centred cube whose side is the largest
+% resolved model dimension. Significant B/G coupling triggers the optional
+% reference-length sensitivity suite below.
+cfg.magnetic.cost.sensitivity_when_significant = true;
+cfg.magnetic.cost.sensitivity_gradient_weight_factors = [0.01 0.10 1.0 10.0];
+cfg.magnetic.cost.sensitivity_tunnel_length_fractions = [0.20 0.50];
+cfg.magnetic.coupling.zero_ratio_tolerance = 1e-10;
+cfg.magnetic.coupling.insignificant_ratio = 1/50;
 cfg.magnetic.acceptance_relative_residual = 1e-6;
 cfg.magnetic.advisory_B_max_T = [];
 cfg.magnetic.advisory_G_max_Tpm = [];

@@ -1,4 +1,4 @@
-# User guide — MSBS requirement tool v0.3.0
+# User guide — MSBS requirement tool v0.4.0
 
 ## 1. Purpose
 
@@ -24,8 +24,8 @@ The calculation sequence is:
 4. Transform all loads to T and reference them to the model centre of mass.
 5. Form the required magnetic wrench.
 6. Build one magnetic influence matrix `A` for each magnet set and scenario attitude.
-7. Solve for the minimum scaled field/Frobenius-gradient requirement.
-8. Export component-level results and set-level envelopes.
+7. Diagnose field/gradient coupling and solve the minimum primary RMS-field magnetic requirement for every scenario/magnet-set combination.
+8. Build scenario extrema plus fixed-configuration and independent-scenario rankings, then export all pointwise and summary results.
 
 ## 3. Frames and signs
 
@@ -141,26 +141,78 @@ B(r) = B0 + G r
 
 so separated magnets see different local B but the same constant G. The solver simultaneously sums the force and torque from every magnet; it does not solve a gradient for a main magnet and then add secondary magnets afterwards.
 
-## 9. Magnetic solve and ranking
+## 9. Magnetic solve, coupling and ranking
 
-The physical map uses
+The physical magnetic map is
 
 ```text
 x = [Bx By Bz gxx gyy gxy gxz gyz]'
 w = A x
 ```
 
-with a symmetric trace-free gradient. `A` is 6×8. Each column is the six-component wrench created by one unit physical field/gradient parameter for the current magnet geometry and attitude.
+with a symmetric trace-free gradient. `A` is 6x8. Each column is the six-component wrench created by one unit physical field/gradient parameter for the current magnet geometry and attitude. A new map is built for every scenario/magnet-set combination because the current `R_TB` rotates magnet offsets and dipole moment vectors into T.
 
-Because there are generally more magnetic unknowns than wrench equations, `lsqminnorm` is used. Internally the five gradient degrees of freedom are transformed into an orthonormal symmetric trace-free basis, so the minimized gradient norm is exactly `norm(G,'fro')` rather than the coordinate-dependent norm used before v0.3.0.
+### Force/torque coupling diagnostic
 
-The objective is dimensionally scaled using `cfg.magnetic.field_scale_T` and `cfg.magnetic.gradient_scale_Tpm`. These are requirement-ranking scales, not hardware limits. A future coil model may map the required field/gradient to current, but that is outside this tool.
+Partition the map into field and gradient columns and force and moment rows. A uniform field cannot produce point-dipole force, so the force/field block is identically zero. The gradient/moment block is also zero for a centred magnet but becomes nonzero for offset or separated magnets because gradient-generated force acts through a moment arm and because the local field varies as `G*r`.
+
+The program compares the gradient-generated moment block with the direct field-generated moment block after both are normalised to the same primary RMS-field cost. It records one of three classes per solved record:
+
+- `zero`: coupling is below `magnetic.coupling.zero_ratio_tolerance`;
+- `insignificant`: nonzero but no more than `magnetic.coupling.insignificant_ratio` (default 1/50) of direct field moment authority;
+- `significant`: larger than that threshold.
+
+This classification is a diagnostic, not a second physical model. The full 6x8 map is always solved. When the gradient/moment block is exactly zero, changing only the relative scalar field-versus-gradient weighting cannot change the physical least-squares solution because the force/gradient and moment/field subproblems are independent.
+
+### Magnetic cost passed to `lsqminnorm`
+
+The five independent gradient degrees of freedom are re-expressed in an orthonormal symmetric trace-free (STF) basis. If `q` contains those coordinates,
+
+\[
+\|q\|_2=\|G\|_F.
+\]
+
+The primary cost is the RMS affine-field magnitude over a centred isotropic reference cube whose side is the largest resolved model outer dimension, `Lref`. For `B(r)=B0+G r`, symmetry of the centred cube gives
+
+\[
+J^2 = \frac{1}{V}\int_V \|B_0+G r\|_2^2\,dV
+     = \|B_0\|_2^2 + \frac{L_{ref}^2}{12}\|G\|_F^2.
+\]
+
+`J` has units tesla and is stored as `magnetic_cost_rms_T`. The corresponding mean vacuum magnetic-energy-density proxy is
+
+\[
+\bar u = \frac{J^2}{2\mu_0}.
+\]
+
+This is a local field-cost proxy, not actual coil stored energy or electrical power. A future coil model may instead optimise current, `0.5*I'*L*I`, copper loss, voltage, or related hardware quantities.
+
+`lsqminnorm` itself still minimises the Euclidean norm of its solver unknown. The code changes variables so that the solver unknown is `[B0; (Lref/sqrt(12))*q]`; consequently its Euclidean norm is exactly `J`. Force and moment equations are separately nondimensionalised by the study-wide characteristic force and moment magnitudes before the least-squares solve.
+
+### Significant-coupling sensitivity solves
+
+If coupling is classified `significant` and sensitivity is enabled, the program repeats only the magnetic solve using a small reference-length suite. The physical loads and magnetic map are not recalculated. The default suite contains:
+
+- the primary model-characteristic cube;
+- model-reference gradient weighting factors 0.01, 0.1 and 10 (factor 1 is the primary solution);
+- centred isotropic cubes with side lengths 20% and 50% of `sqrt(tunnel area)`.
+
+These alternatives all retain the same `||G||F` metric and change only the scalar field/gradient trade-off. They are stored separately in `magnetic_cost_sensitivity.csv` so the primary `scenario_results.csv` remains one row per scenario/magnet set.
+
+### Two ranking interpretations
+
+Every scenario/magnet-set combination is solved pointwise first. No synthetic wrench is created from separate component extrema. The results then support two equally valid interpretations depending on the experiment:
+
+1. **Fixed configuration / minimax:** when one magnet arrangement must cover all scenarios, each set is characterised by its maximum `J`; accepted sets are ranked by the smallest of those maxima.
+2. **Independent scenarios:** when each unrelated scenario may use its own magnet arrangement, the lowest-cost acceptable set is selected separately for every scenario and scenarios are then ranked hardest-first by that best achievable `J`.
 
 ## 10. Outputs
 
-`scenario_results.csv` contains one row per scenario and magnet set, including separate aerodynamic, gravity, other and inertial contributions; the required magnetic wrench; `B0`; all six unique physical gradient components; Frobenius gradient norm; residuals; map rank and condition number; plus scenario metadata.
+`scenario_results.csv` contains one primary row per scenario and magnet set, including separate aerodynamic, gravity, other and inertial contributions; the required magnetic wrench; `B0`; all six unique physical gradient components; local-field and Frobenius-gradient metrics; coupling class/ratio; primary RMS-field cost; mean vacuum energy-density proxy; residuals; map rank and condition number; plus scenario metadata.
 
-`magnet_set_summary.csv` contains per-set worst-case envelopes. `results_full.mat` retains full matrices, local magnet fields and intermediate records.
+`scenario_extrema.csv` identifies the actual scenario producing each absolute force/moment-component extreme and each force/moment, field, gradient, cost and residual maximum. Component maxima are never combined into a fictitious load case.
+
+`magnet_set_summary.csv` contains per-set envelopes. `fixed_configuration_ranking.csv` contains the minimax fixed-hardware ranking. `independent_scenario_ranking.csv` contains the hardest-first independent-scenario ranking. If significant coupling triggered alternate solves, `magnetic_cost_sensitivity.csv` stores those compact pointwise alternatives. `results_full.mat` retains all full-precision matrices, local magnet fields and intermediate records.
 
 ## 11. Complete default configuration reference
 
@@ -268,8 +320,12 @@ The objective is dimensionally scaled using `cfg.magnetic.field_scale_T` and `cf
 | Field | Default | Meaning |
 |---|---:|---|
 | `magnetic.model` | `source_free_first_order` | Point-dipole/first-order field model. |
-| `magnetic.field_scale_T` | 0.10 | Field scale in minimum-norm objective. |
-| `magnetic.gradient_scale_Tpm` | 1.0 | Frobenius-gradient scale in objective. |
+| `magnetic.cost.primary_mode` | `model_characteristic_cube_rms` | Primary RMS-field cost using a centred cube with side equal to the largest model dimension. |
+| `magnetic.cost.sensitivity_when_significant` | true | Run alternate reference-length solves only for significantly coupled maps. |
+| `magnetic.cost.sensitivity_gradient_weight_factors` | `[0.01 0.10 1 10]` | Multipliers on the model reference length used for coupling sensitivity. |
+| `magnetic.cost.sensitivity_tunnel_length_fractions` | `[0.20 0.50]` | Alternate cube sides as fractions of `sqrt(tunnel area)`. |
+| `magnetic.coupling.zero_ratio_tolerance` | 1e-10 | Dimensionless threshold for effectively zero gradient-to-moment coupling. |
+| `magnetic.coupling.insignificant_ratio` | 1/50 | Dimensionless threshold below which nonzero coupling is labelled insignificant. |
 | `magnetic.acceptance_relative_residual` | 1e-6 | Dimensionless numerical controllability threshold. |
 | `magnetic.condition_warning_threshold` | 1e10 | Map-conditioning warning level. |
 | `magnetic.advisory_B_max_T` | empty | Optional user advisory field level. |

@@ -1,24 +1,34 @@
-function solution = solveMagneticRequirement(map, requiredWrench, scales, cfg)
-%SOLVEMAGNETICREQUIREMENT Solve the scaled minimum-field/gradient problem.
-% The map uses physical coordinates [B; gxx gyy gxy gxz gyz]. The solve is
-% performed in an orthonormal symmetric trace-free gradient basis so the
-% gradient part of the Euclidean minimum norm is exactly ||G||_F.
+function solution = solveMagneticRequirement(map, requiredWrench, scales, cfg, costMetric)
+%SOLVEMAGNETICREQUIREMENT Solve one scaled minimum-cost magnetic problem.
+% The physical map uses x=[B; gxx gyy gxy gxz gyz]. The five gradient
+% coordinates are first mapped to an orthonormal symmetric trace-free basis.
+% The cost metric then defines a change of variables whose Euclidean norm is
+% the RMS field over a centred isotropic reference cube:
+%   J^2 = ||B0||^2 + (Lref^2/12)||G||_F^2.
+% lsqminnorm therefore minimizes wrench residual first and this magnetic cost
+% second, without mixing force and moment units or raw field/gradient units.
 arguments
     map (1,1) struct
     requiredWrench (6,1) double {mustBeFinite}
     scales (1,1) struct
     cfg (1,1) struct
+    costMetric (1,1) struct
 end
 
-P=localGradientCoordinateTransform();
+P=msbsreq.gradientCoordinateTransform();
 Tbasis=blkdiag(eye(3),P);
-Dobjective=diag([repmat(cfg.magnetic.field_scale_T,1,3), ...
-    repmat(cfg.magnetic.gradient_scale_Tpm,1,5)]);
+ell=costMetric.gradient_equivalent_length_m;
+if ~(isscalar(ell)&&isfinite(ell)&&ell>0)
+    error('msbsreq:InvalidMagneticCostMetric','gradient_equivalent_length_m must be positive and finite.');
+end
+% y=[B0; ell*q], so ||y||_2 is the selected RMS-field cost and
+% z=[B0;q]=Tcost*y.
+Tcost=diag([ones(1,3),repmat(1/ell,1,5)]);
 Dw=diag([repmat(1/scales.force_N,1,3),repmat(1/scales.moment_Nm,1,3)]);
-A_scaled=Dw*map.A*Tbasis*Dobjective;
+A_scaled=Dw*map.A*Tbasis*Tcost;
 w_scaled=Dw*requiredWrench;
 y=lsqminnorm(A_scaled,w_scaled);
-x=Tbasis*Dobjective*y;
+x=Tbasis*Tcost*y;
 
 [achieved,localFields]=msbsreq.evaluateMagneticWrench(x,map.positions_T_m,map.dipoles_T_Am2);
 residual=achieved-requiredWrench;
@@ -37,6 +47,8 @@ if norm(G-G.','fro')>tol || abs(trace(G))>tol
          'symmetry or trace tolerance.']);
 end
 
+costRms=norm(y);
+mu0=4*pi*1e-7;
 solution=struct();
 solution.x=x;
 solution.B0_T=x(1:3);
@@ -50,7 +62,11 @@ else
 end
 solution.G_frobenius_Tpm=norm(G,'fro');
 solution.G_max_abs_component_Tpm=max(abs(G),[],'all');
-solution.scaled_solution_norm=norm(y);
+solution.magnetic_cost_metric_id=costMetric.id;
+solution.reference_cube_side_m=costMetric.reference_cube_side_m;
+solution.gradient_equivalent_length_m=ell;
+solution.magnetic_cost_rms_T=costRms;
+solution.mean_vacuum_energy_density_Jpm3=costRms^2/(2*mu0);
 solution.achieved_wrench_T=achieved;
 solution.residual_wrench_T=residual;
 solution.force_residual_N=residual(1:3);
@@ -63,14 +79,4 @@ solution.rank=map.rank;
 solution.condition_number=map.condition_number;
 solution.singular_values=map.singular_values;
 solution.left_null_space=map.left_null_space;
-end
-
-function P=localGradientCoordinateTransform()
-% q are orthonormal symmetric trace-free coordinates; p=P*q gives
-% p=[gxx gyy gxy gxz gyz]. Therefore ||q||_2=||G||_F.
-P=[ 1/sqrt(2),  1/sqrt(6), 0,         0,         0; ...
-   -1/sqrt(2),  1/sqrt(6), 0,         0,         0; ...
-    0,          0,         1/sqrt(2), 0,         0; ...
-    0,          0,         0,         1/sqrt(2), 0; ...
-    0,          0,         0,         0,         1/sqrt(2)];
 end

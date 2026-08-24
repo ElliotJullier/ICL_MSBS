@@ -93,8 +93,12 @@ cfg.motion.harmonic.samples_per_cycle = 72;
 cfg.additional_wrenches = table();
 
 cfg.magnetic.model = "source_free_first_order";
-cfg.magnetic.field_scale_T = 0.10;
-cfg.magnetic.gradient_scale_Tpm = 1.0;
+cfg.magnetic.cost.primary_mode = "model_characteristic_cube_rms";
+cfg.magnetic.cost.sensitivity_when_significant = true;
+cfg.magnetic.cost.sensitivity_gradient_weight_factors = [0.01 0.10 1.0 10.0];
+cfg.magnetic.cost.sensitivity_tunnel_length_fractions = [0.20 0.50];
+cfg.magnetic.coupling.zero_ratio_tolerance = 1e-10;
+cfg.magnetic.coupling.insignificant_ratio = 1/50;
 cfg.magnetic.acceptance_relative_residual = 1e-6;
 cfg.magnetic.condition_warning_threshold = 1e10;
 cfg.magnetic.advisory_B_max_T = [];
