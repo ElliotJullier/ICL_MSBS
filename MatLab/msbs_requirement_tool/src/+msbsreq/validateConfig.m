@@ -1,5 +1,5 @@
 function warnings = validateConfig(cfg, projectRoot)
-%VALIDATECONFIG Validate the streamlined v0.4.0 configuration.
+%VALIDATECONFIG Validate the streamlined v0.4.1 configuration.
 arguments
     cfg (1,1) struct
     projectRoot (1,1) string
@@ -166,7 +166,7 @@ mustBeMember(string(cfg.magnetic.cost.primary_mode),["model_characteristic_cube_
 if ~(islogical(cfg.magnetic.cost.sensitivity_when_significant)&&isscalar(cfg.magnetic.cost.sensitivity_when_significant))
     error('msbsreq:InvalidMagneticSensitivityFlag','sensitivity_when_significant must be a logical scalar.');
 end
-localPositiveVector(cfg.magnetic.cost.sensitivity_gradient_weight_factors,'magnetic sensitivity gradient weights');
+localPositiveVector(cfg.magnetic.cost.sensitivity_relative_length_scales_m,'magnetic sensitivity relative B/G length scales');
 localPositiveVector(cfg.magnetic.cost.sensitivity_tunnel_length_fractions,'magnetic sensitivity tunnel fractions');
 if any(cfg.magnetic.cost.sensitivity_tunnel_length_fractions>=1)
     error('msbsreq:InvalidMagneticTunnelFraction','Magnetic sensitivity tunnel fractions must lie in (0,1).');

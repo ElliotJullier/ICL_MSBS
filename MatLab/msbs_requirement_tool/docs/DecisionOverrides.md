@@ -1,4 +1,4 @@
-# Confirmed design decisions — v0.4.0
+# Confirmed design decisions — v0.4.1
 
 1. The program is a magnetic-requirement tool, not a coil/current, controller, camera-noise or aerodynamic-solver tool.
 2. Use E/T/B frames. T is also the wind-aligned frame; no independent W frame is retained.
@@ -15,7 +15,7 @@
 13. The primary magnetic cost is the RMS affine-field magnitude over a centred isotropic cube whose side is the largest model outer dimension: `J^2=||B0||^2+(Lref^2/12)||G||F^2`.
 14. `lsqminnorm` is retained. Wrench residual is minimised first; among equivalent residual solutions the change of variables makes the secondary minimum norm equal to the selected magnetic cost.
 15. Gradient-to-moment coupling is classified from the full map. The full 6x8 system is always solved; classification only controls reporting and optional sensitivity solves.
-16. Significant-coupling sensitivity solves vary only the scalar reference length; they do not recalculate loads or the magnetic map.
+16. Significant-coupling sensitivity solves use two distinct families without recalculating loads or the magnetic map: relative B/G regularisation lengths `ell=[0.01 0.1 1 10] m`, and reference-volume RMS-field metrics using `Lref=Lmodel`, `0.2*sqrt(A_tunnel)` and `0.5*sqrt(A_tunnel)`.
 17. Every pointwise scenario/magnet-set solution is retained. Fixed-hardware ranking uses minimax `min_j max_k J_jk`; independent-scenario ranking uses `min_j J_jk` separately for each scenario and orders scenarios hardest-first.
 18. Component extrema retain the actual scenario that produced them and are never combined into a fictitious wrench.
 19. Permanent-magnet mutual interactions, coil currents, winding geometry, inductance, resistance, voltage, thermal limits and controller design remain outside scope.

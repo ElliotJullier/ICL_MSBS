@@ -1,6 +1,8 @@
 function T = buildSensitivityResultTable(records)
 %BUILDSENSITIVITYRESULTTABLE Flatten alternate magnetic-cost solutions.
-% Only records classified as significantly coupled contain sensitivity solves.
+% Only significantly coupled records contain sensitivity solves. The table
+% keeps relative B/G weighting metrics separate from reference-volume RMS
+% metrics so unlike cost interpretations are never silently conflated.
 arguments
     records (:,1) struct
 end
@@ -20,9 +22,11 @@ for i=1:numel(records)
         row.coupling_class=records(i).map.coupling.classification;
         row.coupling_ratio=records(i).map.coupling.ratio;
         row.metric_id=metric.id;
+        row.metric_type=metric.metric_type;
         row.metric_reference_source=metric.reference_source;
         row.reference_cube_side_m=metric.reference_cube_side_m;
-        row.gradient_weight_factor=metric.gradient_weight_factor;
+        row.relative_length_scale_m=metric.relative_length_scale_m;
+        row.solver_gradient_length_m=metric.gradient_equivalent_length_m;
         row.tunnel_length_fraction=metric.tunnel_length_fraction;
         row.Bx_T=sol.B0_T(1);row.By_T=sol.B0_T(2);row.Bz_T=sol.B0_T(3);
         row.gxx_Tpm=G(1,1);row.gyy_Tpm=G(2,2);row.gzz_Tpm=G(3,3);
@@ -31,7 +35,9 @@ for i=1:numel(records)
         row.B_local_max_norm_T=sol.B_local_max_norm_T;
         row.G_frobenius_Tpm=sol.G_frobenius_Tpm;
         row.G_max_abs_Tpm=sol.G_max_abs_component_Tpm;
-        row.magnetic_cost_rms_T=sol.magnetic_cost_rms_T;
+        row.cost_value_T=sol.magnetic_cost_value_T;
+        row.relative_field_gradient_cost_T=sol.relative_field_gradient_cost_T;
+        row.reference_volume_B_rms_T=sol.magnetic_cost_rms_T;
         row.mean_vacuum_energy_density_Jpm3=sol.mean_vacuum_energy_density_Jpm3;
         row.relative_scaled_residual=sol.relative_scaled_residual;
         row.controllable=sol.controllable;
@@ -48,11 +54,11 @@ end
 
 function row=localEmptyRow()
 row=struct('scenario_id',"",'scenario_name',"",'magnet_set_id',"",'magnet_set_name',"", ...
-    'coupling_class',"",'coupling_ratio',NaN,'metric_id',"",'metric_reference_source',"", ...
-    'reference_cube_side_m',NaN,'gradient_weight_factor',NaN,'tunnel_length_fraction',NaN, ...
+    'coupling_class',"",'coupling_ratio',NaN,'metric_id',"",'metric_type',"",'metric_reference_source',"", ...
+    'reference_cube_side_m',NaN,'relative_length_scale_m',NaN,'solver_gradient_length_m',NaN,'tunnel_length_fraction',NaN, ...
     'Bx_T',NaN,'By_T',NaN,'Bz_T',NaN, ...
     'gxx_Tpm',NaN,'gyy_Tpm',NaN,'gzz_Tpm',NaN,'gxy_Tpm',NaN,'gxz_Tpm',NaN,'gyz_Tpm',NaN, ...
     'B_norm_T',NaN,'B_local_max_norm_T',NaN,'G_frobenius_Tpm',NaN,'G_max_abs_Tpm',NaN, ...
-    'magnetic_cost_rms_T',NaN,'mean_vacuum_energy_density_Jpm3',NaN, ...
-    'relative_scaled_residual',NaN,'controllable',false);
+    'cost_value_T',NaN,'relative_field_gradient_cost_T',NaN,'reference_volume_B_rms_T',NaN, ...
+    'mean_vacuum_energy_density_Jpm3',NaN,'relative_scaled_residual',NaN,'controllable',false);
 end

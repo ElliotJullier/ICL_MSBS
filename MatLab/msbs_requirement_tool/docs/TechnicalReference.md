@@ -10,7 +10,7 @@ Three right-handed frames are used:
 - **T** — tunnel and MSBS reporting frame; `+x_T` is downstream wind direction.
 - **B** — body-fixed frame for geometry, magnets and attitude.
 
-Wind and tunnel axes are deliberately identical in v0.4.0, so no independent W frame is maintained. A vertical or inclined tunnel is represented by rotating T relative to E.
+Wind and tunnel axes are deliberately identical in v0.4.1, so no independent W frame is maintained. A vertical or inclined tunnel is represented by rotating T relative to E.
 
 For a vector fixed in B,
 
@@ -275,7 +275,19 @@ The configured thresholds classify the map as zero, insignificant or significant
 
 ### 9.4 Significant-coupling sensitivity suite
 
-For significant maps the default alternate reference lengths are model multipliers 0.01, 0.1 and 10 around the primary factor 1, plus cube sides 0.2 and 0.5 times `sqrt(tunnel area)`. Each alternate solution is another `lsqminnorm` solve using the same `A`, `w_req` and wrench scaling; only `ell` changes. These compact alternatives are stored separately from the primary pointwise result.
+For significant maps, the default sensitivity suite separates two mathematical interpretations that happen to use the same solver-coordinate form `y=[B0; ell*q]`.
+
+For the **relative-length family**, `ell` is directly specified as `0.01, 0.1, 1 or 10 m` and the minimised regularisation is
+
+\[
+C_{rel}^2=\|B_0\|^2+ell^2\|G\|_F^2.
+\]
+
+Only the ratio between field and gradient weighting matters. The equivalent form `Crel^2/ell^2=||B0||^2/ell^2+||G||F^2` selects the same solution, showing explicitly that a single length is sufficient; separate `B*` and `G*` values would be redundant up to a common multiplier. In particular, the earlier `B*=0.1 T`, `G*=1 T/m` pair is exactly `ell=B*/G*=0.1 m`. This family has no energy-volume interpretation.
+
+For the **reference-volume family**, `ell=Lref/sqrt(12)` follows from the exact spatial mean-square integral of the affine field over a centred cube. The suite uses `Lref=Lmodel`, `0.2*sqrt(tunnel area)` and `0.5*sqrt(tunnel area)`. These metrics report both `B_rms` and the mean vacuum energy-density proxy `B_rms^2/(2*mu0)`.
+
+Each alternate solution reuses the same `A`, `w_req` and wrench scaling; only the cost-coordinate transform changes. The seven compact alternatives are stored separately from the primary pointwise result and tagged by metric type.
 
 ### 9.5 Ranking
 

@@ -1,5 +1,5 @@
 function cfg = case_template()
-%CASE_TEMPLATE Streamlined v0.4.0 MSBS requirement-study template.
+%CASE_TEMPLATE Streamlined v0.4.1 MSBS requirement-study template.
 % Copy this file, rename the file/function identically, and edit USER INPUTS.
 
 %% USER INPUT 1 — Case identity
@@ -110,9 +110,10 @@ cfg.magnetic.model = "source_free_first_order";
 cfg.magnetic.cost.primary_mode = "model_characteristic_cube_rms";
 % Primary cost is RMS field over a centred cube whose side is the largest
 % resolved model dimension. Significant B/G coupling triggers the optional
-% reference-length sensitivity suite below.
+% sensitivity suite below. Relative-length scales are a separate, deliberately
+% non-energy B/G weighting study: Jrel^2=||B0||^2+ell^2||G||F^2.
 cfg.magnetic.cost.sensitivity_when_significant = true;
-cfg.magnetic.cost.sensitivity_gradient_weight_factors = [0.01 0.10 1.0 10.0];
+cfg.magnetic.cost.sensitivity_relative_length_scales_m = [0.01 0.10 1.0 10.0];
 cfg.magnetic.cost.sensitivity_tunnel_length_fractions = [0.20 0.50];
 cfg.magnetic.coupling.zero_ratio_tolerance = 1e-10;
 cfg.magnetic.coupling.insignificant_ratio = 1/50;

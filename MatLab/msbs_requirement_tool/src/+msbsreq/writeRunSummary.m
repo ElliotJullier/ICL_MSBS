@@ -38,7 +38,7 @@ lines(end+1)="";
 lines(end+1)="## Magnetic requirement envelopes";
 lines(end+1)="";
 lines(end+1)="The primary magnetic cost is the RMS affine-field magnitude over a centred isotropic reference cube whose side is the largest resolved model dimension. With B(r)=B0+G r this gives J^2=||B0||2^2+(Lref^2/12)||G||F^2 and a mean vacuum-energy-density proxy J^2/(2 mu0). The residual threshold tests wrench reproduction, not whether a practical coil system exists.";
-lines(end+1)="Gradient-to-moment coupling is classified from the magnetic influence map. Exact/insignificant coupling uses the primary solve only; significant coupling can trigger the configured reference-length sensitivity suite, stored separately from the primary results.";
+lines(end+1)="Gradient-to-moment coupling is classified from the magnetic influence map. Exact/insignificant coupling uses the primary solve only; significant coupling can trigger separate relative B/G length-scale and reference-volume RMS-field sensitivity solves, stored separately from the primary results.";
 lines(end+1)="";
 lines(end+1)="| Magnet set | Worst force (N) | Worst moment (N m) | Max local B (T) | Max ||G||F (T/m) | Max RMS-field cost (T) | Coupling | Max relative residual | Accepted |";
 lines(end+1)="|---|---:|---:|---:|---:|---:|---|---:|:---:|";
@@ -68,7 +68,7 @@ lines(end+1)="- `magnet_set_summary.csv`: per-set envelopes, coupling classifica
 lines(end+1)="- `scenario_extrema.csv`: actual scenarios producing each component/norm/magnetic extreme; extrema are never combined into a fictitious wrench.";
 lines(end+1)="- `fixed_configuration_ranking.csv`: minimax ranking when one magnet configuration must cover all scenarios.";
 lines(end+1)="- `independent_scenario_ranking.csv`: hardest-first scenario ranking after selecting the best acceptable magnet set independently for each scenario.";
-lines(end+1)="- `magnetic_cost_sensitivity.csv`: alternate reference-length solutions for significantly coupled records only (written when present).";
+lines(end+1)="- `magnetic_cost_sensitivity.csv`: relative B/G length-scale and reference-volume RMS-field sensitivity solutions for significantly coupled records only (written when present).";
 lines(end+1)="- `results_full.mat`: full-precision MATLAB study struct and intermediate records.";
 lines(end+1)="- `config_raw.*` and `config_resolved.*`: supplied and fully resolved inputs.";
 lines(end+1)="- `configuration.png/.pdf`, `worst_case_*.png/.pdf`, and `magnetic_field_*.png/.pdf`: review figures.";

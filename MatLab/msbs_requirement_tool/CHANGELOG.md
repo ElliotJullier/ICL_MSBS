@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.1 — Separate relative B/G and reference-volume sensitivities
+
+- Kept the primary magnetic ranking metric as RMS affine-field magnitude over a centred cube whose side is the largest resolved model dimension.
+- Corrected the v0.4.0 sensitivity suite so `[0.01 0.1 1 10]` are explicit relative field/gradient length scales `ell` in `sqrt(||B0||^2 + ell^2||G||F^2)`, rather than multipliers on the model reference volume.
+- Retained separate reference-volume sensitivity solves at `Lref=Lmodel`, `0.2*sqrt(tunnel area)` and `0.5*sqrt(tunnel area)`.
+- Added metric-family/type and relative-length fields to `magnetic_cost_sensitivity.csv`; mean vacuum energy density is reported only for reference-volume RMS metrics.
+- Preserved one primary pointwise result per scenario/magnet set and the existing minimax and independent-scenario rankings, which continue to use the primary model-scale RMS-field metric.
+- Updated documentation and tests to distinguish a relative regularisation length from a physical reference-volume interpretation.
+
 ## 0.4.0 — Coupling-aware magnetic cost and dual ranking
 
 - Replaced the arbitrary `field_scale_T` / `gradient_scale_Tpm` objective with an RMS affine-field cost over a centred isotropic reference cube whose side is the largest resolved model dimension.

@@ -79,6 +79,30 @@ classdef TestMagneticEquations < matlab.unittest.TestCase
             testCase.verifyEqual(sol.magnetic_cost_rms_T,expected,'RelTol',1e-12);
             testCase.verifyEqual(sol.mean_vacuum_energy_density_Jpm3,expected^2/(2*4*pi*1e-7),'RelTol',1e-12);
         end
+        function relativeLengthCostMatchesSingleScaleDefinition(testCase)
+            cfg=msbsreq.resolveConfig(struct());scales=struct('force_N',1,'moment_Nm',1);
+            set=localSet([1;1;0],[0.05;0.03;0]);map=msbsreq.buildMagneticMap(set,eye(3),zeros(3,1));
+            metric=localRelativeCostMetric(0.1);
+            sol=msbsreq.solveMagneticRequirement(map,[1;2;0;0.1;0.3;-0.2],scales,cfg,metric);
+            expected=sqrt(sol.B0_norm_T^2+metric.relative_length_scale_m^2*sol.G_frobenius_Tpm^2);
+            testCase.verifyEqual(sol.relative_field_gradient_cost_T,expected,'RelTol',1e-12);
+            testCase.verifyEqual(sol.magnetic_cost_value_T,expected,'RelTol',1e-12);
+            testCase.verifyTrue(isnan(sol.magnetic_cost_rms_T));
+            testCase.verifyTrue(isnan(sol.mean_vacuum_energy_density_Jpm3));
+        end
+        function sensitivityMetricFamiliesAreDistinct(testCase)
+            cfg=msbsreq.resolveConfig(struct());
+            tunnel=msbsreq.buildTunnel(cfg);geometry=msbsreq.buildGeometry(cfg,tunnel);
+            metrics=msbsreq.buildMagneticCostMetrics(geometry,tunnel,cfg);
+            T=struct2table(metrics.sensitivity,'AsArray',true);
+            testCase.verifyEqual(height(T),7);
+            testCase.verifyEqual(sum(T.metric_type=="relative_length"),4);
+            testCase.verifyEqual(sum(T.metric_type=="reference_volume_rms"),3);
+            relative=sort(T.relative_length_scale_m(T.metric_type=="relative_length"));
+            testCase.verifyEqual(relative,[0.01;0.1;1;10],'AbsTol',1e-14);
+            testCase.verifyEqual(metrics.primary.metric_type,"reference_volume_rms");
+            testCase.verifyEqual(metrics.primary.reference_cube_side_m,max(geometry.outer_dimensions_B_m),'RelTol',1e-12);
+        end
         function acceptedSetRankingUsesPrimaryCost(testCase)
             cfg=msbsreq.resolveConfig(struct());
             T=localSummaryTable();
@@ -141,9 +165,17 @@ T=table(magnet_set_id,magnet_set_name,scenario_id,scenario_name,force_req_norm_N
 end
 
 function metric=localCostMetric(L)
-metric=struct('id',"test",'reference_source',"test",'reference_cube_side_m',L, ...
-    'gradient_equivalent_length_m',L/sqrt(12),'gradient_weight_factor',1, ...
-    'tunnel_length_fraction',NaN,'is_primary',true,'cost_definition',"test");
+metric=struct('id',"test_volume",'metric_type',"reference_volume_rms",'reference_source',"test", ...
+    'reference_cube_side_m',L,'relative_length_scale_m',NaN, ...
+    'gradient_equivalent_length_m',L/sqrt(12),'tunnel_length_fraction',NaN, ...
+    'is_primary',true,'cost_definition',"test",'cost_interpretation',"test");
+end
+
+function metric=localRelativeCostMetric(ell)
+metric=struct('id',"test_relative",'metric_type',"relative_length",'reference_source',"test", ...
+    'reference_cube_side_m',NaN,'relative_length_scale_m',ell, ...
+    'gradient_equivalent_length_m',ell,'tunnel_length_fraction',NaN, ...
+    'is_primary',false,'cost_definition',"test",'cost_interpretation',"test");
 end
 
 function set=localSet(direction,centre)

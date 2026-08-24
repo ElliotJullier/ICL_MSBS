@@ -20,7 +20,7 @@ results = runAllTests();
 study = runStudy("case_minimal_example");
 ```
 
-Version 0.4.0 retains the streamlined simultaneous-state workflow and replaces the arbitrary field/gradient scaling ratio with a model-scale RMS-field cost. It also reports gradient-to-moment coupling, runs compact reference-length sensitivity solves only when coupling is significant, and exports both fixed-configuration and independent-scenario rankings.
+Version 0.4.1 retains the model-scale RMS-field primary cost and separates two significant-coupling sensitivity families: explicit relative field/gradient length scales and physically interpreted reference-volume RMS-field metrics. It also reports gradient-to-moment coupling and exports both fixed-configuration and independent-scenario rankings.
 
 ## Documentation
 

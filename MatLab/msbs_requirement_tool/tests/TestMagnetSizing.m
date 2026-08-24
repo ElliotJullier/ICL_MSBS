@@ -44,9 +44,11 @@ classdef TestMagnetSizing < matlab.unittest.TestCase
             cfg.magnets.sets(1).name="offset_single";cfg.magnets.sets(1).magnets=m;
             study=runStudy(cfg);
             testCase.verifyEqual(study.results.coupling_class(1),"significant");
-            testCase.verifyGreaterThanOrEqual(height(study.sensitivity_results),6);
+            testCase.verifyEqual(height(study.sensitivity_results),7);
             testCase.verifyTrue(all(study.sensitivity_results.scenario_id==study.results.scenario_id(1)));
-            testCase.verifyTrue(any(study.sensitivity_results.metric_id=="model_characteristic_rms"));
+            testCase.verifyTrue(any(study.sensitivity_results.metric_id=="volume_model_characteristic"));
+            testCase.verifyEqual(sum(study.sensitivity_results.metric_type=="relative_length"),4);
+            testCase.verifyEqual(sum(study.sensitivity_results.metric_type=="reference_volume_rms"),3);
         end
         function manualTwoMagnetStudyRuns(testCase)
             cfg=case_test_equivalence();

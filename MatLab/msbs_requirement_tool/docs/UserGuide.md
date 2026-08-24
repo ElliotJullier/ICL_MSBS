@@ -1,4 +1,4 @@
-# User guide — MSBS requirement tool v0.4.0
+# User guide — MSBS requirement tool v0.4.1
 
 ## 1. Purpose
 
@@ -191,13 +191,25 @@ This is a local field-cost proxy, not actual coil stored energy or electrical po
 
 ### Significant-coupling sensitivity solves
 
-If coupling is classified `significant` and sensitivity is enabled, the program repeats only the magnetic solve using a small reference-length suite. The physical loads and magnetic map are not recalculated. The default suite contains:
+If coupling is classified `significant` and sensitivity is enabled, the program repeats only the magnetic solve using two deliberately separate metric families. The physical loads and magnetic map are not recalculated.
 
-- the primary model-characteristic cube;
-- model-reference gradient weighting factors 0.01, 0.1 and 10 (factor 1 is the primary solution);
-- centred isotropic cubes with side lengths 20% and 50% of `sqrt(tunnel area)`.
+**Relative B/G weighting family.** A single length `ell` sets the field/gradient trade-off:
 
-These alternatives all retain the same `||G||F` metric and change only the scalar field/gradient trade-off. They are stored separately in `magnetic_cost_sensitivity.csv` so the primary `scenario_results.csv` remains one row per scenario/magnet set.
+\[
+C_{rel}^2=\|B_0\|_2^2+ell^2\|G\|_F^2.
+\]
+
+The default `ell` values are `0.01, 0.1, 1 and 10 m`. This is a regularisation sensitivity only; it does not claim an energy or control-volume interpretation. Equivalently, dividing by `ell^2` gives `||B0||^2/ell^2+||G||F^2`, which selects the same physical solution for a fixed `ell`. The former tesla-valued form is stored because it uses the same solver-coordinate convention as the RMS-field metrics. The previous `B*=0.1 T`, `G*=1 T/m` weighting corresponds exactly to the single ratio `ell=B*/G*=0.1 m`; separate reference magnitudes are therefore unnecessary for this sensitivity family.
+
+**Reference-volume family.** For a centred isotropic cube of side `Lref`,
+
+\[
+B_{rms}^2=\|B_0\|_2^2+\frac{L_{ref}^2}{12}\|G\|_F^2,
+\]
+
+with the default volumes `Lref=Lmodel`, `0.2*sqrt(tunnel area)` and `0.5*sqrt(tunnel area)`. Only these rows have the physical RMS-field / mean-vacuum-energy-density interpretation `ubar=B_rms^2/(2*mu0)`.
+
+All seven alternatives are stored in `magnetic_cost_sensitivity.csv` for significantly coupled records, with `metric_type` identifying `relative_length` or `reference_volume_rms`. The primary `scenario_results.csv` remains one row per scenario/magnet set and continues to use `Lref=Lmodel`.
 
 ### Two ranking interpretations
 
@@ -321,8 +333,8 @@ Every scenario/magnet-set combination is solved pointwise first. No synthetic wr
 |---|---:|---|
 | `magnetic.model` | `source_free_first_order` | Point-dipole/first-order field model. |
 | `magnetic.cost.primary_mode` | `model_characteristic_cube_rms` | Primary RMS-field cost using a centred cube with side equal to the largest model dimension. |
-| `magnetic.cost.sensitivity_when_significant` | true | Run alternate reference-length solves only for significantly coupled maps. |
-| `magnetic.cost.sensitivity_gradient_weight_factors` | `[0.01 0.10 1 10]` | Multipliers on the model reference length used for coupling sensitivity. |
+| `magnetic.cost.sensitivity_when_significant` | true | Run alternate relative-length and reference-volume solves only for significantly coupled maps. |
+| `magnetic.cost.sensitivity_relative_length_scales_m` | `[0.01 0.10 1 10]` m | Relative B/G regularisation lengths `ell` for significant-coupling sensitivity. |
 | `magnetic.cost.sensitivity_tunnel_length_fractions` | `[0.20 0.50]` | Alternate cube sides as fractions of `sqrt(tunnel area)`. |
 | `magnetic.coupling.zero_ratio_tolerance` | 1e-10 | Dimensionless threshold for effectively zero gradient-to-moment coupling. |
 | `magnetic.coupling.insignificant_ratio` | 1/50 | Dimensionless threshold below which nonzero coupling is labelled insignificant. |
