@@ -4,7 +4,7 @@ function cfg = case_sphere_drag_crisis_t10_h()
 % Smooth 10% blockage sphere drag-crisis screen in 1.0 m tunnel, horizontal.
 
 cfg.meta.case_id = "sphere_drag_crisis_t10_h";
-cfg.meta.description = "Smooth 10% blockage sphere drag-crisis screen in 1.0 m tunnel, horizontal.";
+cfg.meta.description = "Smooth 5% blockage sphere drag-crisis screen in 1.0 m tunnel, horizontal.";
 
 cfg.tunnel.cross_section.type = "rectangular";
 cfg.tunnel.cross_section.width_m = 1.00;
@@ -22,7 +22,7 @@ cfg.frames.body_origin_T_m = [0;0;0];
 
 cfg.geometry.type = "sphere";
 cfg.geometry.sizing.mode = "blockage";
-cfg.geometry.sizing.blockage_ratio = 0.10;
+cfg.geometry.sizing.blockage_ratio = 0.5;
 cfg.geometry.aero_reference_area.mode = "projected_nominal";
 cfg.geometry.aero_reference_length.mode = "characteristic_default";
 cfg.geometry.aero_reference_span.mode = "characteristic_default";

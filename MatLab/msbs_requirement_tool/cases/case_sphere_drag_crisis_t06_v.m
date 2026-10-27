@@ -4,7 +4,7 @@ function cfg = case_sphere_drag_crisis_t06_v()
 % Smooth 10% blockage sphere drag-crisis screen in 0.6 m tunnel, vertical.
 
 cfg.meta.case_id = "sphere_drag_crisis_t06_v";
-cfg.meta.description = "Smooth 10% blockage sphere drag-crisis screen in 0.6 m tunnel, vertical.";
+cfg.meta.description = "Smooth 5% blockage sphere drag-crisis screen in 0.6 m tunnel, vertical.";
 
 cfg.tunnel.cross_section.type = "rectangular";
 cfg.tunnel.cross_section.width_m = 0.60;
@@ -22,7 +22,7 @@ cfg.frames.body_origin_T_m = [0;0;0];
 
 cfg.geometry.type = "sphere";
 cfg.geometry.sizing.mode = "blockage";
-cfg.geometry.sizing.blockage_ratio = 0.10;
+cfg.geometry.sizing.blockage_ratio = 0.05;
 cfg.geometry.aero_reference_area.mode = "projected_nominal";
 cfg.geometry.aero_reference_length.mode = "characteristic_default";
 cfg.geometry.aero_reference_span.mode = "characteristic_default";
@@ -55,7 +55,7 @@ cfg.aero.Cn = 0;
 % Approximate smooth-sphere drag-crisis points read from Achenbach (1972), Figure 4.
 cfg.scenarios = table( ...
     ["Re150k";"Re250k";"Re370k";"Re500k";"Re600k"], ...
-    [10.35207561;17.25345936;25.53511985;34.50691871;41.40830246], ...
+    [14.64;24.4001;36.1121;48.8002;58.5602], ...
     [0.51;0.50;0.07;0.08;0.085], ...
     [150000;250000;370000;500000;600000], ...
     repmat("Achenbach_1972_Fig4_approx",5,1), ...
