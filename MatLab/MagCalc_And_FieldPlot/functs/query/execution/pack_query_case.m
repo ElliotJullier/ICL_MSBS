@@ -13,8 +13,11 @@ Qcase.meta = struct();
 Qcase.meta.caseName = string(caseDef.caseName);
 Qcase.meta.model = string(caseDef.model);
 Qcase.meta.source = string(dataset.source);
+if isfield(caseDef,"isDifference") && ~isempty(caseDef.isDifference)
+    Qcase.meta.isDifference=logical(caseDef.isDifference);
+end
 
-if isfield(caseDef, "datasetFile")
+if isfield(caseDef, "datasetFile") && ~isempty(caseDef.datasetFile)
     Qcase.meta.datasetFile = string(caseDef.datasetFile);
 elseif isfield(dataset, "datasetFile")
     Qcase.meta.datasetFile = string(dataset.datasetFile);
@@ -46,6 +49,15 @@ Qcase.current.values = op.currents;
 Qcase.current.mode = op.mode;
 Qcase.current.rowsToControl = op.rowsToControl;
 Qcase.current.residualNorm = op.residualNorm;
+if isfield(op,"layerIndex")
+    Qcase.meta.layerIndex = op.layerIndex;
+    if isfield(dataset,"parameter")
+        Qcase.meta.parameter = dataset.parameter;
+        if numel(dataset.parameter.values)>=op.layerIndex
+            Qcase.meta.parameterValue = dataset.parameter.values(op.layerIndex);
+        end
+    end
+end
 
 if isfield(op, "magnet")
     Qcase.magnet = op.magnet;

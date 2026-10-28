@@ -1,107 +1,68 @@
-function h = add_coil_presence_to_line_plot(ax, lineReq, geometry, colorVal)
-%ADD_COIL_PRESENCE_TO_LINE_PLOT Shade coil regions along a line plot.
-%
-% This implementation samples the line and shades regions whose points lie
-% inside each coil's outer envelope/material. It is approximate; a future
-% exact version should analytically compute line/annular-cylinder interval
-% intersections for each coil.
-
-h = gobjects(0);
-
-if isempty(geometry) || ~isfield(lineReq, 'X') || ~isfield(lineReq, 's')
-    return
-end
-
-if nargin < 4 || isempty(colorVal)
-    colourOrder = get(ax, "ColorOrder");
-    colorVal = colourOrder(1, :);
-end
-colorVal = reshape(double(colorVal), 1, 3);
-
-pts = [lineReq.X(:).'; lineReq.Y(:).'; lineReq.Z(:).'];
-s   = lineReq.s(:);
-
-if numel(s) < 2
-    return
-end
-
-mask = coil_material_mask(pts, geometry);
-yl = ylim(ax);
-
-ds = median(abs(diff(s)), 'omitnan');
-if ~isfinite(ds) || ds <= 0
-    ds = 0;
-end
-
-outerColor = 0.80*colorVal + 0.20*[1 1 1];
-bodyColor  = colorVal;
-boundaryColor = max(0, 0.65*colorVal);
-
-hOuter = draw_mask_spans(ax, s, mask.outer, yl, ds, outerColor, 0.25);
-hMaterial = draw_mask_spans(ax, s, mask.material, yl, ds, bodyColor, 0.55);
-hBounds = draw_mask_boundaries(ax, s, mask.outer, ds, boundaryColor);
-
-% Return material handles first so the legend swatch uses the main coil-set
-% colour rather than the lighter outer-envelope colour.
-h = [hMaterial(:); hOuter(:); hBounds(:)];
-
-% Do not use uistack here. In line plots with yyaxis, reordering axes
-% children can fail because the children list contains yyaxis-dependent
-% graphics objects, patches, and constant-line objects.
-end
-
-function h = draw_mask_spans(ax, s, mask, yl, ds, colorVal, alphaVal)
-h = gobjects(0);
-edges = diff([false, mask(:).', false]);
-idxStart = find(edges == 1);
-idxEnd   = find(edges == -1) - 1;
-
-for j = 1:numel(idxStart)
-    s0 = s(idxStart(j));
-    s1 = s(idxEnd(j));
-
-    if ds > 0
-        s0 = max(min(s), s0 - 0.5*ds);
-        s1 = min(max(s), s1 + 0.5*ds);
+function h = add_coil_presence_to_line_plot(ax,lineReq,geometry,unusedColor,alpha,showBores)
+%ADD_COIL_PRESENCE_TO_LINE_PLOT Full-height material bands, hatched coil bores.
+% Native xregion stays full height after zoom/ylim changes and behind traces.
+if nargin<5, alpha=[]; end
+if nargin<6, showBores=true; end
+h=gobjects(0);
+if ~isfield(lineReq,"s") || numel(lineReq.s)<2, return; end
+p0=[lineReq.X(1),lineReq.Y(1),lineReq.Z(1)];
+p1=[lineReq.X(end),lineReq.Y(end),lineReq.Z(end)]; L=norm(p1-p0);
+for c=geometry_components(geometry)
+    if ~c.closed
+        warning("MSBS:OpenMesh","Cannot determine material intervals for '%s'; cleanup did not yield a closed surface.",c.name); continue
     end
-
-    h(end+1,1) = patch(ax, ...
-        [s0 s1 s1 s0], ...
-        [yl(1) yl(1) yl(2) yl(2)], ...
-        colorVal, ...
-        'FaceAlpha', alphaVal, ...
-        'EdgeColor', 'none', ...
-        'DisplayName', 'Coils', ...
-        'HandleVisibility', 'off', ...
-        'HitTest', 'off'); %#ok<AGROW>
-end
-end
-
-function h = draw_mask_boundaries(ax, s, mask, ds, colorVal)
-h = gobjects(0);
-edges = diff([false, mask(:).', false]);
-idxStart = find(edges == 1);
-idxEnd   = find(edges == -1) - 1;
-
-for j = 1:numel(idxStart)
-    s0 = s(idxStart(j));
-    s1 = s(idxEnd(j));
-
-    if ds > 0
-        s0 = max(min(s), s0 - 0.5*ds);
-        s1 = min(max(s), s1 + 0.5*ds);
+    spans=mesh_line_intervals(c.shape,p0,p1);
+    opacity=c.alpha; if ~isempty(alpha), opacity=alpha; end
+    [color,~]=component_plot_style(c);
+    for j=1:size(spans,1)
+        x=plot_interval(spans(j,:));
+        if existing_band("MSBSMaterialBand",x,c.role), continue; end
+        h(end+1)=xregion(ax,x(1),x(2),"FaceColor",color,"FaceAlpha",opacity, ...
+            "EdgeColor","none","Layer","bottom","HandleVisibility","off", ...
+            "Tag","MSBSMaterialBand","UserData",struct("role",c.role,"material",true)); %#ok<AGROW>
+        draw_material_boundaries(ax,x,color);
     end
-
-    h(end+1,1) = xline(ax, s0, '--', ...
-        'Color', colorVal, ...
-        'LineWidth', 1.0, ...
-        'DisplayName', 'Coils', ...
-        'HandleVisibility', 'off'); %#ok<AGROW>
-
-    h(end+1,1) = xline(ax, s1, '--', ...
-        'Color', colorVal, ...
-        'LineWidth', 1.0, ...
-        'DisplayName', 'Coils', ...
-        'HandleVisibility', 'off'); %#ok<AGROW>
+    if ~isempty(spans), register_geometry_legend(ax,c,opacity); end
+    if showBores && string(c.role)=="coil"
+        bore=coil_bore_geometry(c.shape);
+        if ~isempty(bore)
+            boreSpans=mesh_line_intervals(bore,p0,p1);
+            for j=1:size(boreSpans,1)
+                x=sort(plot_interval(boreSpans(j,:)));
+                if existing_band("MSBSBoreBand",x,"coil"), continue; end
+                xregion(ax,x(1),x(2),"FaceColor",color,"FaceAlpha",.08, ...
+                    "EdgeColor","none","Layer","bottom","HandleVisibility","off", ...
+                    "Tag","MSBSBoreBand","UserData",struct("material",false,"role","coil"));
+                draw_bore_hatching(ax,x,color);
+                draw_material_boundaries(ax,x,color);
+            end
+            if ~isempty(boreSpans)
+                tag="MSBSGeometryLegend_bore";
+                if isempty(findobj(ax,"Tag",tag))
+                    patch(ax,NaN,NaN,color,"FaceAlpha",.08,"EdgeColor",color, ...
+                        "LineStyle",":","DisplayName","Coil bore (not winding)", ...
+                        "Tag",tag,"HitTest","off");
+                end
+            end
+        end
+    end
 end
+    function found=existing_band(tag,span,role)
+        found=false;
+        for region=findall(ax,"Tag",tag).'
+            info=region.UserData;
+            if isstruct(info) && isfield(info,"role") && string(info.role)==string(role) && ...
+                    max(abs(sort(region.Value(:))-sort(span(:))))<1e-10*max(1,max(abs(span)))
+                found=true; return
+            end
+        end
+    end
+    function x=plot_interval(span)
+        if isfield(lineReq,"plotCoordinates")
+            values=lineReq.plotCoordinates;
+            x=values(1)+span/L*(values(end)-values(1));
+        else
+            x=span+lineReq.s(1);
+        end
+    end
 end

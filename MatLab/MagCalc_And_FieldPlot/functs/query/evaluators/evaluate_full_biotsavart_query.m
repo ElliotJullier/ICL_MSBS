@@ -6,7 +6,8 @@ function result = evaluate_full_biotsavart_query(dataset, op, q, queryIndex)
 % queries on fundamental planes, custom planes, and lines.
 
 scalarData = get_total_component_field_grid(dataset, op, q.component); % Same shape as B field except 1 layer in 5th dimension (coils)
-dataName = "B" + q.component;
+[~, label] = normalise_direction(q.component);
+dataName = "B" + label;
 
 if q.quantity == "gradient"
     gradDir = q.gradientDirection;

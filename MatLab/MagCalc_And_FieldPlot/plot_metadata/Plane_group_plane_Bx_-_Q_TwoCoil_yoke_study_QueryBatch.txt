@@ -1,0 +1,31 @@
+Plot metadata
+=============
+
+Figure title: Plane group plane_Bx - Q_TwoCoil_yoke_study_batch5_QueryBatch
+Created on: 2026-10-28 18:24:53
+Q file: C:\Bulk Data - No backup\ICL_MSBS_GitHub\MatLab\MagCalc_And_FieldPlot\Q outputs\Q_TwoCoil_yoke_study_batch5_QueryBatch.mat
+Number of plotted records: 1
+
+Colour scale class: field
+Colour limits: [-0.0017276600533352 0.0017276600533352]
+
+Record 1
+--------
+Case name: TwoCoil_andYoke
+Model: comsol_precomputed
+Query name: Bx
+Data name: Bx
+Query index: 2
+Result index: 2
+Query type: fundamental_plane
+Quantity: field
+Component: x
+Plot group: plane_Bx
+Overview requested: false
+ShowCoils requested: true
+Dataset source: comsol_precomputed
+Dataset file: TwoCoil_andYoke_Planar.txt
+Query file: C:\Bulk Data - No backup\ICL_MSBS_GitHub\MatLab\MagCalc_And_FieldPlot\Q outputs\Q_TwoCoil_yoke_study_batch5_QueryBatch.mat
+Data size: [300 300]
+Finite data points: 90000
+

@@ -26,30 +26,21 @@ end
 % Put the case name first so exported figures are easier to identify.
 figName = "Case Overview: " + caseName + " - " + qFileBase;
 
-% Synthetic datasets are often differences between two cases with different
-% coil layouts. Do not show coils in synthetic overviews, even if geometry
-% exists from one of the source datasets.
+% Virtual/synthetic overviews show their actual transformed source meshes.
 isSyntheticCase = isfield(Q_case, "synthetic") || ...
     (isfield(Q_case, "meta") && isfield(Q_case.meta, "model") && ...
      lower(string(Q_case.meta.model)) == "synthetic_difference");
 
 hasUsableCoilGeometry = isfield(Q_case, "geometry") && ...
     isstruct(geometry) && ...
-    isfield(geometry, "coil") && ...
-    ~isempty(geometry.coil);
+    ~isempty(geometry_components(geometry));
 
 if ~isSyntheticCase && hasUsableCoilGeometry
     figStruct = setup_coil_geometry_figure(geometry);
     set(figStruct.fig, "Name", char(figName));
     ax = figStruct.ax;
 
-    % The overview legend should describe overview query objects only.
-    % Coil bodies are background geometry in this plot, so force any objects
-    % created by setup_coil_geometry_figure to remain hidden from the legend.
-    existingChildren = ax.Children;
-    if ~isempty(existingChildren)
-        set(existingChildren(isgraphics(existingChildren)), "HandleVisibility", "off");
-    end
+
 else
     fig = figure("Name", char(figName));
     ax = axes("Parent", fig);
@@ -65,7 +56,21 @@ else
     zlabel(ax, "$z$ [m]", "Interpreter", "latex");
 end
 
+if isSyntheticCase && isfield(Q_case,"synthetic") && isfield(Q_case.synthetic,"coilGeometrySources")
+    seen={};
+    for source=Q_case.synthetic.coilGeometrySources
+        components=geometry_components(source.geometry);
+        if any(cellfun(@(previous) isequaln(previous,components),seen)), continue; end
+        seen{end+1}=components; %#ok<AGROW>
+        handles=plot_component_geometry(ax,source.geometry);
+        set(handles,"HandleVisibility","off");
+    end
+end
+
 hold(ax, 'on');
+if isfield(plotStyle,"geometryAlpha") && ~isempty(plotStyle.geometryAlpha)
+    set(findall(ax,"Type","patch"),"FaceAlpha",plotStyle.geometryAlpha);
+end
 
 refLabel = "";
 usedLegendLabels = strings(0);
@@ -112,11 +117,11 @@ end
 
 % Show a legend only for explicitly labelled overview query objects. Coils
 % and start/end markers have HandleVisibility='off', so they are excluded.
-if ~isempty(usedLegendLabels)
+if ~isempty(usedLegendLabels) || ~isempty(findobj(ax,"-regexp","Tag","^MSBSGeometryLegend_"))
     legend(ax, 'show', 'Location', 'best', 'Interpreter', 'none');
 end
 
-title(ax, figName, 'Interpreter', 'none');
+apply_scientific_plot_style(ax,plotStyle);
 
 write_plot_metadata_file(figName, [plane_requests(:); line_requests(:)], plotStyle);
 

@@ -57,15 +57,23 @@ else
     figName = "Plane group " + groupLabel + " - " + qFileBase;
 end
 
-set(fig, "Name", char(figName));
+set(fig, "Name", char(figName), "NumberTitle","off");
+if isfield(plotStyle,"colourScaleClass")
+    setappdata(fig,"MSBSColourScaleClass",plotStyle.colourScaleClass);
+    setappdata(fig,"MSBSColourScaleLimits",plotStyle.colourScaleLimits);
+end
+if isfield(plotStyle,"gradientColorLimitReport")
+    setappdata(fig,"MSBSGradientColorLimitReport",plotStyle.gradientColorLimitReport);
+end
 
 for k = 1:numel(reqs)
     surf(ax, reqs{k}.X, reqs{k}.Y, reqs{k}.Z, reqs{k}.data, ...
         'EdgeColor', 'none', ...
+        'HandleVisibility', visibility_for_surface(singlePlane), ...
         'DisplayName', char(string(reqs{k}.caseName) + ": " + string(reqs{k}.queryName)));
 end
 
-plot_coil_groups_on_plane_axes(ax, coilGroups);
+plot_coil_groups_on_plane_axes(ax, coilGroups, plotStyle);
 
 quantityClass = get_record_group_quantity_class(reqs);
 set_clrbar(ax, plotStyle.clim.(quantityClass), refLabel);
@@ -81,10 +89,10 @@ ylabel(ax, '$y$ [m]', 'Interpreter', 'latex');
 zlabel(ax, '$z$ [m]', 'Interpreter', 'latex');
 
 if numel(reqs) > 1 || ~isempty(coilGroups)
-    legend(ax, 'show', 'Location', 'best', 'Interpreter', 'none');
+    legend(ax, 'show', 'Location', 'southoutside', 'Interpreter', 'none', 'Orientation','horizontal');
 end
 
-title(ax, figName, "Interpreter", "none");
+apply_scientific_plot_style(ax,plotStyle);
 
 if exist('write_plot_metadata_file', 'file') == 2
     write_plot_metadata_file(figName, reqs, plotStyle);
@@ -97,32 +105,19 @@ end
 
 
 % -------------------- LOCAL HELPER FUNCTION(S) --------------------------
-function plot_coil_groups_on_plane_axes(ax, coilGroups)
-%PLOT_COIL_GROUPS_ON_PLANE_AXES Plot one overlay per distinct requested coil set.
-
-if isempty(coilGroups)
-    return
+function value=visibility_for_surface(singlePlane)
+if singlePlane, value='off'; else, value='on'; end
 end
 
-colourOrder = get(ax, "ColorOrder");
-if isempty(colourOrder)
-    colourOrder = lines(max(1, numel(coilGroups)));
-end
-
-for g = 1:numel(coilGroups)
-    colour = colourOrder(mod(g-1, size(colourOrder, 1)) + 1, :);
-
-    hCoils = plot_coils_transparent_edges(ax, coilGroups(g).geometry, ...
-        "Color", colour, ...
-        "Alpha", 0.55, ...
-        "DisplayName", coilGroups(g).legendLabel);
-
-    validCoils = hCoils(isgraphics(hCoils));
-    if ~isempty(validCoils)
-        set(validCoils, "HandleVisibility", "off");
-        set(validCoils(1), ...
-            "DisplayName", char(coilGroups(g).legendLabel), ...
-            "HandleVisibility", "on");
+function plot_coil_groups_on_plane_axes(ax,groups,style)
+alpha=[]; if isfield(style,"geometryAlpha"), alpha=style.geometryAlpha; end
+for g=1:numel(groups)
+    used={};
+    for r=groups(g).records
+        q=r{1}.query;
+        if any(cellfun(@(previous) isequaln(previous,q),used)), continue; end
+        used{end+1}=q;
+        plot_geometry_sections(ax,groups(g).geometry,q,alpha);
     end
 end
 end

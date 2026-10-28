@@ -27,7 +27,7 @@ end
 
 [~,~,ext] = fileparts(geometryFile);
 if lower(string(ext)) ~= ".mat"
-    error("Geometry file must be a .mat file. Use stl_to_query_geometry_file to convert STL files first.");
+    error("Geometry file must be a .mat file. Use load_comsol_geometry to read component STLs directly.");
 end
 
 S = load(geometryFile);

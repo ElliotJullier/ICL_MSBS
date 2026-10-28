@@ -11,8 +11,10 @@ addParameter(p, "Group", [], @(x)true);
 addParameter(p, "Overview", false, @(x)islogical(x) || isnumeric(x));
 addParameter(p, "Name", "", @(x)isstring(x) || ischar(x));
 addParameter(p, "ShowCoils", false, @(x)islogical(x) || isnumeric(x));
+addParameter(p, "ShowGeometry", [], @(x) isempty(x) || islogical(x) || isnumeric(x));
 parse(p, varargin{:});
 opts = p.Results;
+if ~isempty(opts.ShowGeometry), opts.ShowCoils = opts.ShowGeometry; end
 
 plane = lower(string(plane));
 if ~any(plane == ["xy", "xz", "yz"])

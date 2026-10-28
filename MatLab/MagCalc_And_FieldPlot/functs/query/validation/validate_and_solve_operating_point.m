@@ -54,6 +54,18 @@ switch mode
             error("mode='precomputed' is for total-field datasets. Use mode='fixed' for superposition datasets.");
         end
         op.mode = "precomputed";
+        if isfield(dataset,"B")
+            nLayers = size(dataset.B,5);
+            if nLayers>1 && (~isfield(opRequest,"layerIndex") || isempty(opRequest.layerIndex))
+                error("MSBS:LayerSelection","Dataset has %d layers. Specify opRequest.layerIndex.",nLayers);
+            end
+            if isfield(opRequest,"layerIndex") && ~isempty(opRequest.layerIndex)
+                validateattributes(opRequest.layerIndex,{'numeric'},{'scalar','integer','>=',1,'<=',nLayers});
+                op.layerIndex = opRequest.layerIndex;
+            else
+                op.layerIndex = 1;
+            end
+        end
 
     otherwise
         error("Unknown opRequest.mode: %s", mode);

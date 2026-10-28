@@ -1,33 +1,29 @@
-function [gradData, dataName] = compute_directional_gradient_grid(grid, scalarData, dataName, gradientDirection)
-%COMPUTE_DIRECTIONAL_GRADIENT_GRID Directional derivative of scalarData.
-%
-% scalarData is stored as scalarData(y,x,z). MATLAB's gradient convention
-% for a 3D array is:
-%   first output  -> derivative along columns, dimension 2 -> x
-%   second output -> derivative along rows,    dimension 1 -> y
-%   third output  -> derivative along pages,   dimension 3 -> z
-
-n = gradientDirection(:).';
-if isempty(n) || norm(n) < eps
-    error("gradientDirection must be non-zero for grid gradient queries.");
+function [gradData,dataName] = compute_directional_gradient_grid(grid,scalarData,dataName,gradientDirection)
+%COMPUTE_DIRECTIONAL_GRADIENT_GRID d(B_a)/dd with thin-axis diagnostics.
+% Suggested samples: max(2,ceil(5*abs(direction cosine))) per contributing
+% axis. Warning heuristic only. An unsampled contributing derivative is NaN.
+[n,label]=normalise_direction(gradientDirection);
+axes={grid.x(:),grid.y(:),grid.z(:)}; dims=[2 1 3];
+counts=cellfun(@numel,axes); contributes=abs(n)>1e-12;
+required=max(2,ceil(5*abs(n)));
+if any(contributes & counts<required)
+    warning("MSBS:ShallowGradient", ...
+        "Direction %s: xyz counts=[%d %d %d], suggested minimum=[%d %d %d] on contributing axes. Unsampled derivatives return NaN.", ...
+        label,counts(1),counts(2),counts(3),required(1),required(2),required(3));
 end
-n = n ./ norm(n);
-
-dx = mean(diff(grid.x));
-dy = mean(diff(grid.y));
-dz = mean(diff(grid.z));
-
-[dB_dx, dB_dy, dB_dz] = gradient(scalarData, dx, dy, dz);
-gradData = n(1)*dB_dx + n(2)*dB_dy + n(3)*dB_dz;
-
-tol = 1e-12;
-if norm(n - [1 0 0]) < tol
-    dataName = "d" + dataName + "/dx";
-elseif norm(n - [0 1 0]) < tol
-    dataName = "d" + dataName + "/dy";
-elseif norm(n - [0 0 1]) < tol
-    dataName = "d" + dataName + "/dz";
-else
-    dataName = "d" + dataName + "/dn";
+dataName="d"+dataName+"/d"+label; gradData=zeros(size(scalarData));
+if any(contributes & counts<2), gradData(:)=NaN; return; end
+for k=find(contributes)
+    order=[dims(k),setdiff(1:3,dims(k),'stable')];
+    v=permute(scalarData,order); sz=size(v); v=reshape(v,counts(k),[]);
+    a=axes{k}; d=NaN(size(v));
+    d(1,:)=(v(2,:)-v(1,:))/(a(2)-a(1));
+    d(end,:)=(v(end,:)-v(end-1,:))/(a(end)-a(end-1));
+    if numel(a)>2
+        h0=a(2:end-1)-a(1:end-2); h1=a(3:end)-a(2:end-1);
+        d(2:end-1,:)=-h1./(h0.*(h0+h1)).*v(1:end-2,:) + ...
+            (h1-h0)./(h0.*h1).*v(2:end-1,:) + h0./(h1.*(h0+h1)).*v(3:end,:);
+    end
+    gradData=gradData+n(k)*ipermute(reshape(d,sz),order);
 end
 end

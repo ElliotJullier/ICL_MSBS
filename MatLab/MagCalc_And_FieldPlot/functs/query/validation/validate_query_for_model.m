@@ -26,7 +26,7 @@ queryType = lower(string(q.type));
 quantity = lower(string(q.quantity));
 
 switch model
-    case {"matlab_full_biotsavart", "comsol_precomputed", "comsol_grid", "synthetic_difference"}
+    case {"matlab_full_biotsavart", "comsol_precomputed", "comsol_grid", "synthetic_difference", "virtual_field"}
         % These are all treated as grid-based datasets at query time.
         allowedTypes = ["line", "fundamental_plane", "custom_plane"];
         allowedQuantities = ["field", "gradient"];

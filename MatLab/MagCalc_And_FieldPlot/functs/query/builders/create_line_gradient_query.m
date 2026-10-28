@@ -7,13 +7,15 @@ function q = create_line_gradient_query(startPoint, endPoint, component, varargi
 
 p = inputParser;
 addParameter(p, "NPoints", 200, @(x)isnumeric(x) && isscalar(x) && x >= 2);
-addParameter(p, "GradientDirection", [], @(x)isnumeric(x) && (isempty(x) || numel(x)==3));
+addParameter(p, "GradientDirection", [], @(x) isempty(x) || isnumeric(x) || ischar(x) || isstring(x));
 addParameter(p, "Group", [], @(x)true);
 addParameter(p, "Overview", false, @(x)islogical(x) || isnumeric(x));
 addParameter(p, "Name", "", @(x)isstring(x) || ischar(x));
 addParameter(p, "ShowCoils", false, @(x)islogical(x) || isnumeric(x));
+addParameter(p, "ShowGeometry", [], @(x) isempty(x) || islogical(x) || isnumeric(x));
 parse(p, varargin{:});
 opts = p.Results;
+if ~isempty(opts.ShowGeometry), opts.ShowCoils = opts.ShowGeometry; end
 
 q = struct();
 q.type = "line";

@@ -1,0 +1,33 @@
+Plot metadata
+=============
+
+Figure title: Plane group plane_dBx_dx - Q_TwoCoil_yoke_study_batch5_QueryBatch
+Created on: 2026-10-28 18:24:53
+Q file: C:\Bulk Data - No backup\ICL_MSBS_GitHub\MatLab\MagCalc_And_FieldPlot\Q outputs\Q_TwoCoil_yoke_study_batch5_QueryBatch.mat
+Number of plotted records: 1
+
+Colour scale class: gradient
+Colour limits: [-0.00503321412975029 0.00503321412975029]
+
+Gradient display clipping: percentile 99; symmetric threshold 0.00503321412975 T/m; saturated fraction 0.01; raw values unchanged.
+
+Record 1
+--------
+Case name: TwoCoil_andYoke
+Model: comsol_precomputed
+Query name: dBx/dx
+Data name: dBx/dx
+Query index: 6
+Result index: 6
+Query type: fundamental_plane
+Quantity: gradient
+Component: x
+Plot group: plane_dBx_dx
+Overview requested: false
+ShowCoils requested: true
+Dataset source: comsol_precomputed
+Dataset file: TwoCoil_andYoke_Planar.txt
+Query file: C:\Bulk Data - No backup\ICL_MSBS_GitHub\MatLab\MagCalc_And_FieldPlot\Q outputs\Q_TwoCoil_yoke_study_batch5_QueryBatch.mat
+Data size: [300 300]
+Finite data points: 90000
+

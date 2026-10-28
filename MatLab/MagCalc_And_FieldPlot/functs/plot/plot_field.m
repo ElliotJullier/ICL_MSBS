@@ -18,39 +18,10 @@ if ~iscell(Q)
 end
 
 plotRecords = build_plot_records_from_Q(Q);
-
 validate_plot_group_types(plotRecords);
-
-if ~isfield(plotStyle, 'showOrientationReadout')
-    plotStyle.showOrientationReadout = true;
-end
-
-if ~isfield(plotStyle, 'clim') || isempty(plotStyle.clim)
-    plotStyle.clim = choose_symmetric_colour_limits(plotRecords);
-
-elseif isnumeric(plotStyle.clim)
-    % Backwards compatibility: a numeric clim applies to both fields and
-    % gradients, although separate limits are usually preferred.
-    tmp = plotStyle.clim;
-    plotStyle.clim = struct("field", tmp, "gradient", tmp);
-
-elseif isstruct(plotStyle.clim)
-    if ~isfield(plotStyle.clim, "field") || isempty(plotStyle.clim.field)
-        autoClim = choose_symmetric_colour_limits(plotRecords);
-        plotStyle.clim.field = autoClim.field;
-    end
-
-    if ~isfield(plotStyle.clim, "gradient") || isempty(plotStyle.clim.gradient)
-        autoClim = choose_symmetric_colour_limits(plotRecords);
-        plotStyle.clim.gradient = autoClim.gradient;
-    end
-else
-    error("plotStyle.clim must be empty, numeric [min max], or a struct with field/gradient limits.");
-end
-
-if ~isfield(plotStyle, 'Q_file')
-    plotStyle.Q_file = "";
-end
+if ~isfield(plotStyle,"showOrientationReadout"), plotStyle.showOrientationReadout=true; end
+if ~isfield(plotStyle,"Q_file"), plotStyle.Q_file=""; end
+plotStyle=resolve_plot_colour_limits(plotRecords,plotStyle);
 
 % ------------------------- Case-specific overviews -------------------------
 for c = 1:numel(Q)
@@ -119,7 +90,8 @@ for c = 1:numel(Q)
     end
 
     % Q is a cell array, so use Q{c}, not Q(c).
-    plot_overview(planeOverview, lineOverview, Q{c}, plotStyle);
+    overviewStyle=select_plot_colour_scale(plotStyle,overviewRecords);
+    plot_overview(planeOverview, lineOverview, Q{c}, overviewStyle);
 end
 
 % ------------------------- Standard plane/line plots -------------------------
@@ -151,73 +123,12 @@ plane_groups = build_plot_groups(plane_records);
 line_groups  = build_plot_groups(line_records);
 
 for k = 1:numel(plane_groups)
-    plot_plane_group(plane_groups(k), plotStyle);
+    planeStyle=select_plot_colour_scale(plotStyle,plane_groups(k).requests);
+    plot_plane_group(plane_groups(k), planeStyle);
 end
 
 for k = 1:numel(line_groups)
     plot_line_group(line_groups(k), plotStyle);
 end
 
-end
-% -------------------------- LOCAL HELPER FUNCTION -----------------------
-
-function clim = choose_symmetric_colour_limits(plot_records)
-%CHOOSE_SYMMETRIC_COLOUR_LIMITS Pick separate field and gradient limits.
-%
-% Field and gradient values have different units, so they must not share the
-% same colour scale. This returns:
-%   clim.field    = [-maxAbsField, maxAbsField]
-%   clim.gradient = [-maxAbsGrad,  maxAbsGrad]
-
-fieldMax = 0;
-gradMax  = 0;
-
-for k = 1:numel(plot_records)
-    r = plot_records{k};
-
-    % Skip line records; colour limits are only for surface/plane data.
-    if isfield(r, 's') || ~isfield(r, 'data') || isempty(r.data)
-        continue
-    end
-
-    thisMax = max(abs(r.data), [], "all", "omitnan");
-    if isempty(thisMax) || ~isfinite(thisMax)
-        continue
-    end
-
-    quantityClass = get_plot_quantity_class(r);
-
-    if quantityClass == "gradient"
-        gradMax = max(gradMax, thisMax);
-    else
-        fieldMax = max(fieldMax, thisMax);
-    end
-end
-
-if fieldMax <= 0
-    fieldMax = 1;
-end
-if gradMax <= 0
-    gradMax = 1;
-end
-
-clim = struct();
-clim.field = [-fieldMax, fieldMax];
-clim.gradient = [-gradMax, gradMax];
-end
-
-function quantityClass = get_plot_quantity_class(record)
-%GET_PLOT_QUANTITY_CLASS Classify a plot record as field or gradient.
-
-if isfield(record, "query") && isfield(record.query, "quantity")
-    q = lower(string(record.query.quantity));
-else
-    q = "";
-end
-
-if q == "gradient" || startsWith(string(record.dataName), "dB")
-    quantityClass = "gradient";
-else
-    quantityClass = "field";
-end
 end

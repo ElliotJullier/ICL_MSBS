@@ -10,14 +10,22 @@ addParameter(p, "Group", [], @(x)true);
 addParameter(p, "Overview", false, @(x)islogical(x) || isnumeric(x));
 addParameter(p, "Name", "", @(x)isstring(x) || ischar(x));
 addParameter(p, "ShowCoils", false, @(x)islogical(x) || isnumeric(x));
+addParameter(p, "ShowGeometry", [], @(x) isempty(x) || islogical(x) || isnumeric(x));
+addParameter(p, "UpVector", []);
+addParameter(p, "ULimits", []);
+addParameter(p, "VLimits", []);
 parse(p, varargin{:});
 opts = p.Results;
+if ~isempty(opts.ShowGeometry), opts.ShowCoils = opts.ShowGeometry; end
 
 q = struct();
 q.type = "custom_plane";
 q.quantity = "field";
 q.point = point(:).';
-q.normal = normal(:).';
+q.normal = normalise_direction(normal);
+q.upVector = opts.UpVector;
+q.uLimits = opts.ULimits;
+q.vLimits = opts.VLimits;
 q.component = component;
 q.resolution = opts.Resolution;
 q.name = string(opts.Name);

@@ -34,7 +34,8 @@ if ~isfolder(outDir)
     mkdir(outDir);
 end
 
-baseName = sanitise_filename_label(figName);
+queryFile=""; if isfield(plotStyle,"Q_file"), queryFile=plotStyle.Q_file; end
+baseName = stable_plot_basename(figName,queryFile);
 metadataFile = fullfile(outDir, baseName + ".txt");
 
 fid = fopen(metadataFile, "w");
@@ -54,6 +55,15 @@ if isfield(plotStyle, "Q_file")
 end
 
 fprintf(fid, "Number of plotted records: %d\n\n", numel(records));
+if isfield(plotStyle,"colourScaleClass")
+    fprintf(fid,"Colour scale class: %s\nColour limits: %s\n\n", ...
+        plotStyle.colourScaleClass,mat2str(plotStyle.colourScaleLimits));
+end
+if isfield(plotStyle,"gradientColorLimitReport")
+    r=plotStyle.gradientColorLimitReport;
+    fprintf(fid,"Gradient display clipping: percentile %g; symmetric threshold %.12g T/m; saturated fraction %.12g; raw values unchanged.\n\n", ...
+        r.percentile,r.threshold,r.saturatedFraction);
+end
 
 for k = 1:numel(records)
     r = records{k};
@@ -119,15 +129,5 @@ if isfield(s, fieldName)
         valText = string(val);
     end
     fprintf(fid, "%s: %s\n", label, valText);
-end
-end
-
-function safe = sanitise_filename_label(label)
-safe = string(label);
-safe = regexprep(safe, '[^\w\-\s]', '');
-safe = regexprep(strtrim(safe), '\s+', '_');
-
-if strlength(safe) == 0
-    safe = "plot_metadata";
 end
 end

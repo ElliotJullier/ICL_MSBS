@@ -5,3 +5,6 @@
 MatLab/MagCalc_And_FieldPlot/Datasets/Morgan_Circular_Export2.txt
 MatLab/MagCalc_And_FieldPlot/Datasets/Morgan_Square_Export2.txt
 MatLab/MagCalc_And_FieldPlot/Datasets/HalfMorgan_Core.txt
+
+# Local MATLAB regression renderings
+MatLab/MagCalc_And_FieldPlot/tests/preview/

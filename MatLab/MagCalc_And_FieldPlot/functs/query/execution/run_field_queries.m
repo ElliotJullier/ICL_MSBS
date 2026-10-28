@@ -20,6 +20,9 @@ for k = 1:numel(queries)
     q = validate_and_complete_query(queries{k}, model);
 
     switch model
+        case "virtual_field"
+            results{k} = evaluate_virtual_field_query(dataset, op, q, k);
+
         case {"matlab_full_biotsavart", "comsol_precomputed", "synthetic_difference"}
             % These are all grid-based models using dataset.B.
             % For superposed MATLAB data, get_total_component_field_grid

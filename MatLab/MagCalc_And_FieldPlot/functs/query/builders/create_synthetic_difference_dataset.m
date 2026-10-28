@@ -58,8 +58,8 @@ commonGrid.x = xInt;
 commonGrid.y = yInt;
 commonGrid.z = zInt;
 
-if numel(commonGrid.x) < 2 || numel(commonGrid.y) < 2 || numel(commonGrid.z) < 2
-    error("Intersection grid is too small for field comparison. Need at least two points along x, y, and z.");
+if isempty(commonGrid.x) || isempty(commonGrid.y) || isempty(commonGrid.z)
+    error("Intersection grid is too small for field comparison. Need an overlapping sample domain.");
 end
 
 BA = total_B_on_own_grid(datasetA, opA);
@@ -79,12 +79,10 @@ for componentIndex = 1:3
     Bdiff(:,:,:,componentIndex,1) = AonCommon - BonCommon;
 end
 
-VA = bounding_box_volume(gridA);
-VB = bounding_box_volume(gridB);
-VI = bounding_box_volume(commonGrid);
-
-excludedA = 100 * (1 - VI / VA);
-excludedB = 100 * (1 - VI / VB);
+% Products of per-axis retained fractions also handle planes/lines and
+% volume-to-plane comparisons without dividing by a zero bounding volume.
+excludedA = 100 * (1-prod(1-[excludedA_x excludedA_y excludedA_z]/100));
+excludedB = 100 * (1-prod(1-[excludedB_x excludedB_y excludedB_z]/100));
 
 report = struct();
 report.gridMode = gridMode;
@@ -93,6 +91,7 @@ report.caseNameB = string(opts.CaseNameB);
 report.datasetFileA = string(opts.DatasetFileA);
 report.datasetFileB = string(opts.DatasetFileB);
 report.excludedVolumePercentA = excludedA;
+report.measureDimension = nnz([numel(commonGrid.x),numel(commonGrid.y),numel(commonGrid.z)]>1);
 report.excludedVolumePercentB = excludedB;
 report.excludedAxisPercentA = [excludedA_x excludedA_y excludedA_z];
 report.excludedAxisPercentB = [excludedB_x excludedB_y excludedB_z];
@@ -130,7 +129,7 @@ diffDataset.synthetic.excludedVolumePercentB = report.excludedVolumePercentB;
 diffDataset.synthetic.coilGeometrySources = coilGeometrySources;
 
 if logical(opts.Verbose)
-    fprintf("Synthetic difference '%s - %s': intersection excludes %.3g%% of case A bounding-box volume and %.3g%% of case B bounding-box volume.\n", ...
+    fprintf("Synthetic difference '%s - %s': intersection excludes %.3g%% of case A intrinsic domain measure and %.3g%% of case B intrinsic domain measure.\n", ...
         report.caseNameA, report.caseNameB, excludedA, excludedB);
 end
 end
@@ -142,32 +141,27 @@ axisB = axisB(:).';
 lo = max(min(axisA), min(axisB));
 hi = min(max(axisA), max(axisB));
 
-if hi <= lo
+if hi < lo
     error("Input grids do not overlap along one axis.");
 end
 
-axisCommon = axisA(axisA >= lo & axisA <= hi);
+if hi == lo
+    axisCommon = lo;
+else
+    axisCommon = axisA(axisA >= lo & axisA <= hi);
+end
 
-if numel(axisCommon) < 2
-    error("Case A grid has fewer than two points inside the intersection along one axis.");
+if isempty(axisCommon)
+    error("Case A grid has no points inside the intersection along one axis.");
 end
 
 lenA = max(axisA) - min(axisA);
 lenB = max(axisB) - min(axisB);
 lenI = max(axisCommon) - min(axisCommon);
 
-excludedA = 100 * (1 - lenI / lenA);
-excludedB = 100 * (1 - lenI / lenB);
-end
-
-function V = bounding_box_volume(grid)
-V = (max(grid.x)-min(grid.x)) * ...
-    (max(grid.y)-min(grid.y)) * ...
-    (max(grid.z)-min(grid.z));
-
-if V <= 0
-    error("Grid bounding-box volume must be positive.");
-end
+excludedA = 0; excludedB = 0;
+if lenA>0, excludedA=100*(1-lenI/lenA); end
+if lenB>0, excludedB=100*(1-lenI/lenB); end
 end
 
 function Btotal = total_B_on_own_grid(dataset, op)
@@ -175,19 +169,10 @@ if ~isfield(dataset, "B")
     error("Synthetic difference requires both datasets to contain dataset.B.");
 end
 
-if dataset.supportsSuperposition
-    if ~isfield(op, "currents") || isempty(op.currents)
-        error("Superposable dataset requires op.currents to form a total field.");
-    end
-
-    currents = reshape(op.currents, 1, 1, 1, 1, []);
-    if numel(op.currents) ~= size(dataset.B, 5)
-        error("op.currents length must match size(dataset.B,5).");
-    end
-
-    Btotal = sum(dataset.B .* currents, 5);
-else
-    Btotal = dataset.B(:,:,:,:,1);
+Btotal=NaN(numel(dataset.grid.y),numel(dataset.grid.x),numel(dataset.grid.z),3);
+components=["x","y","z"];
+for j=1:3
+    Btotal(:,:,:,j)=get_total_component_field_grid(dataset,op,components(j));
 end
 end
 
@@ -236,8 +221,7 @@ end
 
 function tf = has_usable_geometry(geometry)
 tf = isstruct(geometry) && ...
-     isfield(geometry, "coil") && ...
-     ~isempty(geometry.coil);
+     ~isempty(geometry_components(geometry));
 end
 
 function geometry = empty_geometry()

@@ -15,9 +15,7 @@ if ~endsWith(fileName, ".mat")
     fileName = fileName + ".mat";
 end
 
-if ~exist(fileName, 'file')
-    error("Could not find Q file: %s", fileName);
-end
+fileName = resolve_msbs_file(fileName,"queryOutputs");
 
 S = load(fileName, "Q");
 if ~isfield(S, "Q")

@@ -15,6 +15,7 @@ if ~endsWith(datasetFile, ".mat")
     datasetFile = datasetFile + ".mat";
 end
 
+datasetFile = resolve_msbs_file(datasetFile,"datasets");
 S = load(datasetFile);
 
 if ~isfield(S, "dataset")
