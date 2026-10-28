@@ -6,7 +6,7 @@ function metadataFile = write_plot_metadata_file(figName, records, plotStyle)
 %
 % plotStyle options:
 %   plotStyle.writeMetadata      true/false, default true
-%   plotStyle.metadataOutputDir  output folder, default "plot_metadata"
+%   plotStyle.metadataOutputDir  output folder, default COMSOL/Graphs/plot_metadata
 
 if nargin < 3
     plotStyle = struct();
@@ -26,7 +26,7 @@ if ~iscell(records)
 end
 
 if ~isfield(plotStyle, "metadataOutputDir") || strlength(string(plotStyle.metadataOutputDir)) == 0
-    plotStyle.metadataOutputDir = "plot_metadata";
+    plotStyle.metadataOutputDir = msbs_graphs_dir("plot_metadata");
 end
 
 outDir = string(plotStyle.metadataOutputDir);
@@ -55,6 +55,9 @@ if isfield(plotStyle, "Q_file")
 end
 
 fprintf(fid, "Number of plotted records: %d\n\n", numel(records));
+if isfield(plotStyle,"vectorDisplayReport")
+    fprintf(fid,"Vector display (data remain in SI; glyph lengths are symbolic):\n%s\n\n",jsonencode(plotStyle.vectorDisplayReport));
+end
 if isfield(plotStyle,"colourScaleClass")
     fprintf(fid,"Colour scale class: %s\nColour limits: %s\n\n", ...
         plotStyle.colourScaleClass,mat2str(plotStyle.colourScaleLimits));

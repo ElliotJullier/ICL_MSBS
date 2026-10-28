@@ -29,7 +29,7 @@ COMSOL/
     2Coil_andYoke.mph
   Datasets/
     2Coil_andYoke_OneCoilExcitation.txt
-  Java COMSOL/
+  Java/
     2Coil_andYoke.java
   STL/
     2Coil_andYoke/
@@ -37,6 +37,10 @@ COMSOL/
       coil_right.stl
       yoke_with_attached_cores.stl
       core_separate.stl                 (only when actually separate)
+  Graphs/
+    TwoCoil_yoke_study/                 (existing study subfolders/formats)
+    VectorExample/
+    plot_metadata/
 ```
 
 The STL folder matches the model name, including spaces/capitalisation. Both the basename
@@ -46,17 +50,61 @@ The default convention is coil=green, yoke=grey, separate core=purple, 50% opaci
 An attached core exported as part of the yoke is grey. Export it separately if it needs separate colour/identity.
 Components may also be supplied explicitly when filenames do not follow this convention.
 
+Keep the folders organised by file type: `COMSOL Files`, `Datasets`, `Java`,
+`STL/<model name>` and `Graphs/<study name>`. Match model basenames across the
+source `.mph`, Java export and STL folder; name datasets by model and exported case.
+This keeps the existing loaders and queries stable. A study can compare several
+models, so its graphs belong under its study name rather than one source model.
+`paths.java` uses `Java`, with `Java COMSOL` supported for existing layouts.
+
 Keep required files available offline in OneDrive. Finish saving/exporting and syncing before switching PCs.
 Do not edit the same .mph simultaneously on both PCs. The code does not move existing files automatically.
 Existing .lnk files may remain navigation aids but are not used by the loaders.
 
 Q outputs stay in the repository's local `Q outputs` folder; the existing Git ignore excludes .mat files.
 Re-run the small query stage on the other PC, or transfer a Q file if you want to reuse that exact batch.
+New figure exports go to the synced `Graphs` folder under this PC's configured
+COMSOL root. Existing study subfolders, filenames, extensions, export resolution
+and vector/raster settings are preserved. On 28 October 2026, the 250 existing
+exports in `Half Morgan Parametrics`, `Morgan Setup` and `TwoCoil_yoke_study`
+were moved from the repository's `Fig Exports` folder into OneDrive `Graphs`.
+Every file was verified by SHA-256 before the local originals were removed.
+Plot metadata goes to `Graphs/plot_metadata`. Neither exports nor paths require
+this chat's access after setup: MATLAB uses your local synced OneDrive folder.
+
+### Home PC: first setup
+
+1. Get the updated repository/scripts onto the Home PC. OneDrive synchronises
+   the COMSOL data and graphs; GitHub/code changes still need their own transfer.
+2. Sync the same Imperial OneDrive COMSOL folder. Wait for current Work PC
+   changes to upload and then download on Home. Make the datasets and STLs
+   needed for querying available locally/offline, not just cloud placeholders.
+3. In MATLAB, open the Home repository's `MatLab/MagCalc_And_FieldPlot` folder,
+   then run the following with the actual Home PC path:
+
+   ```matlab
+   setup_msbs_project();
+   paths = set_msbs_data_root("C:/Users/<home-user>/OneDrive - Imperial College London/PhD/21 Design and Procurement/21-2 EM Coils/COMSOL");
+   disp(paths.datasets)
+   disp(paths.graphs)
+   ```
+
+   Set the preference once on that PC; it does not change the Work PC's setup.
+   If `MSBS_DATA_ROOT` is already set, update or unset it because it takes priority.
+   The shipped query/plot scripts add their function paths on each run.
+4. Run the relevant query script, then its plot script. Existing exported graphs
+   can be opened directly from OneDrive. To replot a Work PC Q batch, copy that
+   Q file into Home's local `Q outputs`, or regenerate it from the shared data.
+   Q files are ignored by Git and are not moved into OneDrive by this setup.
+
+Existing COMSOL solutions and numerical exports can be reused without solving
+again. On both PCs, matching graph filenames overwrite the same shared files;
+finish saving and syncing a study before switching PCs.
 
 ## 2. Checklist after solving in COMSOL
 
 - [ ] Save the solved model, including the solution you want to reuse, under `COMSOL Files`.
-- [ ] Export a Model file for Java to `Java COMSOL` with the corresponding model name.
+- [ ] Export a Model file for Java to `Java` with the corresponding model name.
       This gives the script-writing chat context. It is not required for MATLAB field evaluation.
 - [ ] Choose the solution and current/parameter case explicitly.
 - [ ] Export Data in **Spreadsheet**, comma-separated, non-transposed format.
@@ -128,6 +176,11 @@ the supplied name/values must honestly describe a single-parameter export.
 
 ## 4. Script contract for the other chat
 
+Vector fields use the same Q pipeline: see [VECTOR_PLOTS.md](VECTOR_PLOTS.md) for
+the complete query/display contract, projection rules, ROI boxes and seeding options.
+Use create_vector_plane_query for projected 2D or full 3D vectors on a plane, and
+create_vector_volume_query for a true 3D box. Never infer a volume from a planar export.
+
 Start each main script independently of the current folder:
 
 ```matlab
@@ -168,6 +221,8 @@ Available query builders:
 | create_custom_plane_gradient_query | point, normal, field direction, derivative direction |
 | create_line_field_query | start point, end point, field direction |
 | create_line_gradient_query | start point, end point, field direction; optional GradientDirection |
+| create_vector_plane_query | plane name + world offset, OR point + normal; vector options |
+| create_vector_volume_query | [xmin xmax; ymin ymax; zmin zmax] in metres, optionally Pose |
 
 Directions accept "x", "y", "z" or finite nonzero 3-vectors. Vectors are normalised.
 Field direction means projection onto that unit vector, not magnitude of B.
@@ -262,17 +317,34 @@ This implementation targets real static fields, not complex/transient exports.
 
 ```matlab
 Q_file = "Q_MyStudy_batch1_QueryBatch.mat"; % actual returned name
+paths = msbs_paths();
 Q = load_Q_case(Q_file);                  % resolves Q outputs automatically
 style = plotStyle();
 style.Q_file = Q_file;
 style.geometryAlpha = 0.5;
 style.metadataOutputDir = paths.metadata;
 plot_field(Q,style);
+
+% Use the existing study folder name; keep its existing format/export settings.
+exportDir = msbs_graphs_dir("MyStudy");
+if ~isfolder(exportDir), mkdir(exportDir); end
+for fig = findall(groot,"Type","figure").'
+    base = stable_plot_basename(string(fig.Name),Q_file);
+    exportgraphics(fig,fullfile(exportDir,base+".png"),"Resolution",300);
+end
 ```
 
 Use the actual queryFile returned by run_query_batch; batch numbers are chosen automatically.
 The shipped plot_main uses the newest Q output when its Q_file is empty.
 Set a specific filename for repeatable plotting.
+All new export scripts must resolve their output folder with
+`msbs_graphs_dir("StudyName",...)` (equivalent to `paths.graphs` plus subfolders).
+Do not use `pwd`, a hard-coded PC path or the repository's `Fig Exports` folder
+for new figure exports. Preserve a study's existing subfolder hierarchy and its
+PNG/SVG/PDF format and export settings. The helper reports an unconfigured or
+unavailable data root instead of silently using a relative output folder.
+The shipped main and vector scripts enable PNG exports by default; set their
+`SAVE_PLOTS` switch false when only an interactive preview is wanted.
 Figure export filenames must be stable across Q batches. Use
 `stable_plot_basename(figure.Name,Q_file)` for the export basename, then write
 to that same path on every run; `exportgraphics` overwrites a matching PNG.
@@ -334,6 +406,12 @@ named difference fields for differences. Plot metadata records the selected
 class/limits, and gradient captions use that class's own clipping report.
 
 ### Scientific plotting standards (apply to every generated plot script)
+
+For vector plots, additionally follow VECTOR_PLOTS.md: uniform seeding by default,
+bounded arrow budgets, direction-normalised lengths, an independent sequential magnitude
+palette, and no competing scalar heatmap in the same axes. Full/projected vector magnitudes
+and ordinary/difference vectors have independent colour-scale classes. The 99th-percentile
+scalar-gradient colour cap does not automatically apply to vector magnitudes.
 
 - Keep figure/tab Name for provenance. Do not draw a title within exported axes.
 - Export using stable_plot_basename and overwrite matching files. Batch numbers
@@ -427,7 +505,7 @@ or simple Biot-Savart method.
 
 Model/Java:
 - COMSOL model basename:
-- Java file: Java COMSOL/<name>.java
+- Java file: Java/<name>.java (or existing Java COMSOL folder)
 - Relevant setup/current winding directions:
 
 Sources:
@@ -454,11 +532,15 @@ Comparisons:
 - Which queries share plot groups:
 - Required 3D overviews and geometry sections:
 - Any colour limits, axis limits or legend labels:
+- Graphs study subfolder and export format (preserve existing choices):
 
 Please use msbs_paths rather than hardcoded PC paths, run_query_batch to
 save into Q outputs, explicit layerIndex for parametric data, and the
 component colours at geometryAlpha=0.5. Keep the query and plotting
-stages separate. Apply the section-6 scientific plotting defaults: no axes
+stages separate. Save figures with msbs_graphs_dir("<study>",...) under the
+synced COMSOL/Graphs folder, preserving study subfolders and export formats.
+Use stable_plot_basename so matching exports overwrite across Q batches.
+Apply the section-6 scientific plotting defaults: no axes
 titles, category fill legends, larger fonts, upright differential d, visible
 ticks, and physical signed coordinates for aligned lines. Report unavailable
 directions/data as NaN. Do not fill open STL contours or force cross-gradient
@@ -480,6 +562,7 @@ addpath("tests");
 test_plot_standards
 test_mesh_partitions_and_bands
 test_colour_scale_classes
+test_vector_queries
 test_comsol_pipeline
 ```
 

@@ -40,7 +40,7 @@ colourPercentile = 99;
 manualCLim = [-0.300193, 0.300193];     % [T], only used when colourLimitMode = "manual"
 
 saveFigures = false;
-exportDir   = fullfile(pwd, "Fig Exports", "Offset_Comp2", "Planar Views", "Field");
+exportDir   = msbs_graphs_dir("Offset_Comp2", "Planar Views", "Field");
 exportExt   = ".svg";
 exportRes   = 400;   % ignored for SVG, but kept for easy PNG switching later
 

@@ -11,7 +11,7 @@
 %        - quadrupole only + PM only
 %
 % Export folder:
-%   Fig Exports/Quadrupole Linearity/
+%   COMSOL/Graphs/Quadrupole Linearity/
 
 clear; close all; clc;
 
@@ -24,7 +24,7 @@ if ~isfile(qFile)
 end
 
 saveFigures = false;
-exportDir = fullfile(pwd, "Fig Exports", "Quadrupole Linearity");
+exportDir = msbs_graphs_dir("Quadrupole Linearity");
 
 % Text settings.
 axisTickFontSize = 16;

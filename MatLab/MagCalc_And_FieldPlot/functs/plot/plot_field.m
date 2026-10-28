@@ -22,6 +22,9 @@ validate_plot_group_types(plotRecords);
 if ~isfield(plotStyle,"showOrientationReadout"), plotStyle.showOrientationReadout=true; end
 if ~isfield(plotStyle,"Q_file"), plotStyle.Q_file=""; end
 plotStyle=resolve_plot_colour_limits(plotRecords,plotStyle);
+if ~isfield(plotStyle,"geometryAlpha"), plotStyle.geometryAlpha=.5; end
+vectorMask=cellfun(@(r) string(r.query.quantity)=="vector",plotRecords);
+plotStyle.vectorColourLimits=resolve_vector_colour_limits(plotRecords(vectorMask),plotStyle);
 
 % ------------------------- Case-specific overviews -------------------------
 for c = 1:numel(Q)
@@ -97,6 +100,7 @@ end
 % ------------------------- Standard plane/line plots -------------------------
 plane_records = {};
 line_records  = {};
+vector_records = {};
 
 for k = 1:numel(plotRecords)
 
@@ -110,7 +114,9 @@ for k = 1:numel(plotRecords)
     record = plotRecords{k};
     queryType = lower(string(record.query.type));
 
-    if contains(queryType, "plane")
+    if startsWith(queryType,"vector_")
+        vector_records{end+1}=record; %#ok<AGROW>
+    elseif contains(queryType, "plane")
         plane_records{end+1} = record; %#ok<AGROW>
     elseif contains(queryType, "line")
         line_records{end+1} = record; %#ok<AGROW>
@@ -121,6 +127,7 @@ end
 
 plane_groups = build_plot_groups(plane_records);
 line_groups  = build_plot_groups(line_records);
+vector_groups = build_plot_groups(vector_records);
 
 for k = 1:numel(plane_groups)
     planeStyle=select_plot_colour_scale(plotStyle,plane_groups(k).requests);
@@ -129,6 +136,9 @@ end
 
 for k = 1:numel(line_groups)
     plot_line_group(line_groups(k), plotStyle);
+end
+for k=1:numel(vector_groups)
+    plot_vector_group(vector_groups(k),plotStyle);
 end
 
 end

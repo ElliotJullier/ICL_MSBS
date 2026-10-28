@@ -11,6 +11,16 @@ end
 if ~isfield(q, "quantity")
     q.quantity = "field";
 end
+if lower(string(q.quantity))=="vector"
+    if lower(string(model))=="simple_biotsavart"
+        error("MSBS:VectorModel","The simple Biot-Savart evaluator does not support vector queries.");
+    end
+    if ~any(string(q.type)==["vector_plane","vector_volume"]) || ~isfield(q,"vector")
+        error("MSBS:VectorQuery","Use create_vector_plane_query or create_vector_volume_query.");
+    end
+    validate_query_for_model(q,model);
+    return
+end
 if ~isfield(q, "component")
     error("Query is missing q.component.");
 end

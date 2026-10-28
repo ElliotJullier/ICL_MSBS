@@ -9,7 +9,7 @@
 %   each graph compares all parameter values/cases
 %
 % Output:
-%   Fig Exports/Half Morgan Parametrics/<parameter>/Line_Plots/dBz_dz_offset_group/
+%   COMSOL/Graphs/Half Morgan Parametrics/<parameter>/Line_Plots/dBz_dz_offset_group/
 
 clear; close all; clc;
 
@@ -25,7 +25,7 @@ if ~isfile(qFile)
 end
 
 saveFigures = true;
-exportDir = fullfile(pwd, "Fig Exports", "Half Morgan Parametrics", studyName, ...
+exportDir = msbs_graphs_dir("Half Morgan Parametrics", studyName, ...
     "Line_Plots", "dBz_dz_offset_group");
 exportExt = ".png";
 

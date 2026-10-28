@@ -17,7 +17,7 @@ style.clim=struct(); style.gradientColorLimitReports=struct();
 keys=["field","fieldDifference","gradient","gradientDifference"];
 classes=cellfun(@plot_colour_scale_class,records,"UniformOutput",false);
 classes=string(classes);
-planes=cellfun(@(r) ~isfield(r,"s") && isfield(r,"data"),records);
+planes=cellfun(@(r) ~isfield(r,"s") && isfield(r,"data") && string(r.query.quantity)~="vector",records);
 for key=keys
     selected=records(planes & classes==key);
     if isfield(requested,key) && ~isempty(requested.(key))

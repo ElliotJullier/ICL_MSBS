@@ -33,4 +33,5 @@ s.lineAxis = "auto"; % x/y/z for aligned lines; distance for oblique lines.
 s.showCoilBores = true; % Hatched, not winding material; may contain a core.
 s.gradientPercentile = 99; % Default display-only cap for all planar gradients.
 s.geometryAlpha = 0.5; % Reviewable opacity for coils, yokes and cores.
+s.vector = struct(); % Optional display overrides; see VECTOR_PLOTS.md.
 end

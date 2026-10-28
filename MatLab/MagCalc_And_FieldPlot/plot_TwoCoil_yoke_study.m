@@ -57,7 +57,7 @@ for k = 1:numel(figs)
 end
 
 if SAVE_PLOTS
-    exportDir = fullfile(projectDir,"Fig Exports","TwoCoil_yoke_study");
+    exportDir = msbs_graphs_dir("TwoCoil_yoke_study");
     if ~isfolder(exportDir), mkdir(exportDir); end
     figs = findall(groot,"Type","figure");
     for k = 1:numel(figs)

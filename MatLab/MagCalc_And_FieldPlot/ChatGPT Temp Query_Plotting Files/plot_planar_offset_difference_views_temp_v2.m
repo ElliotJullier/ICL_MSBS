@@ -20,7 +20,7 @@
 %   - axis equal to preserve equal units on x and z
 %   - outline-only coil overlays (no shading)
 %   - project colourbar style via set_clrbar.m
-%   - export path prepared as: Fig Exports/Offset Comparison/Difference Views
+%   - export path prepared as: COMSOL/Graphs/Offset Comparison/Difference Views
 %   - auto-export is OFF by default
 
 clear; close all;
@@ -39,7 +39,7 @@ colourPercentile = 99;
 manualCLim = [-0.011353, 0.011353];
 
 saveFigures = true;
-exportDir   = fullfile(pwd, "Fig Exports", "Offset Comparison 2", "Difference Views", "Field");
+exportDir   = msbs_graphs_dir("Offset Comparison 2", "Difference Views", "Field");
 exportExt   = ".svg";
 exportRes   = 400; %#ok<NASGU>
 

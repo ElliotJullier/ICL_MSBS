@@ -1,4 +1,5 @@
 close all
+SAVE_PLOTS=true; % PNG exports go to the synced COMSOL/Graphs/Main folder.
 projectDir=fileparts(mfilename("fullpath"));
 addpath(genpath(fullfile(projectDir,"functs")));
 paths=msbs_paths();
@@ -19,3 +20,11 @@ style.geometryAlpha=0.5; % 50% opacity (=50% transparency), review here.
 style.metadataOutputDir=paths.metadata;
 % style.clim=struct("field",[-1 1]*1e-3,"gradient",[-1 1]*1e-3);
 plot_field(Q,style);
+if SAVE_PLOTS
+    exportDir=msbs_graphs_dir("Main");
+    if ~isfolder(exportDir), mkdir(exportDir); end
+    for fig=findall(groot,"Type","figure").'
+        base=stable_plot_basename(string(fig.Name),Q_file);
+        exportgraphics(fig,fullfile(exportDir,base+".png"),"Resolution",300);
+    end
+end

@@ -28,8 +28,8 @@ quantity = lower(string(q.quantity));
 switch model
     case {"matlab_full_biotsavart", "comsol_precomputed", "comsol_grid", "synthetic_difference", "virtual_field"}
         % These are all treated as grid-based datasets at query time.
-        allowedTypes = ["line", "fundamental_plane", "custom_plane"];
-        allowedQuantities = ["field", "gradient"];
+        allowedTypes = ["line", "fundamental_plane", "custom_plane", "vector_plane", "vector_volume"];
+        allowedQuantities = ["field", "gradient", "vector"];
 
         if ~any(queryType == allowedTypes)
             error("Model '%s' does not support query type '%s'.", model, queryType);

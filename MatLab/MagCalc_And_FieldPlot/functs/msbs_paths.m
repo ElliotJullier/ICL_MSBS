@@ -12,6 +12,9 @@ if strlength(root)==0
     end
 end
 p.dataRoot=root; p.models=fullfile(root,"COMSOL Files"); p.datasets=fullfile(root,"Datasets");
-p.java=fullfile(root,"Java COMSOL"); p.stl=fullfile(root,"STL");
-p.queryOutputs=fullfile(p.project,"Q outputs"); p.metadata=fullfile(p.project,"plot_metadata");
+p.java=fullfile(root,"Java");
+if ~isfolder(p.java) && isfolder(fullfile(root,"Java COMSOL")), p.java=fullfile(root,"Java COMSOL"); end
+p.stl=fullfile(root,"STL"); p.graphs=fullfile(root,"Graphs");
+p.queryOutputs=fullfile(p.project,"Q outputs"); p.metadata=fullfile(p.graphs,"plot_metadata");
+if strlength(root)==0, p.metadata=""; end % Let the writer report missing setup.
 end

@@ -15,7 +15,7 @@
 %     reference half-planes
 %
 % Export:
-%   Fig Exports/Morgan Setup/Circular_v_Square_Spatial_Overview.svg
+%   COMSOL/Graphs/Morgan Setup/Circular_v_Square_Spatial_Overview.svg
 
 clear; close all; clc;
 addpath(genpath("functs"));
@@ -30,7 +30,7 @@ offsetList_mm = [0, 5, 10, 25, 50, 75];
 figName = "Circular_v_Square_Spatial_Overview";
 
 saveFig = true;
-exportDir = fullfile(pwd, "Fig Exports", "Morgan Setup");
+exportDir = msbs_graphs_dir("Morgan Setup");
 exportName = "Circular_v_Square_Spatial_Overview.png";
 
 %% ------------------------------ Styling ------------------------------ %%

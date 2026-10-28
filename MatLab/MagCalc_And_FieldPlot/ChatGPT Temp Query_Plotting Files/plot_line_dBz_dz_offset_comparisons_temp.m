@@ -17,8 +17,8 @@
 %      one plot per coil/line family, comparing all offsets
 %
 % Export folder structure:
-%   Fig Exports/Offset_Comp/Line_Plots/offset_group/
-%   Fig Exports/Offset_Comp/Line_Plots/coil_group/
+%   COMSOL/Graphs/Offset_Comp/Line_Plots/offset_group/
+%   COMSOL/Graphs/Offset_Comp/Line_Plots/coil_group/
 %
 % Filename convention:
 %   grad_offset_group_0mm.svg
@@ -43,7 +43,7 @@ end
 
 saveFigures = false;
 
-exportBaseDir   = fullfile(pwd, "Fig Exports", "Offset_Comp2", "Line_Plots");
+exportBaseDir   = msbs_graphs_dir("Offset_Comp2", "Line_Plots");
 offsetExportDir = fullfile(exportBaseDir, "offset_group");
 coilExportDir   = fullfile(exportBaseDir, "coil_group");
 exportExt       = ".svg";

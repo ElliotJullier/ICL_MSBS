@@ -18,6 +18,11 @@ results = cell(size(queries));
 
 for k = 1:numel(queries)
     q = validate_and_complete_query(queries{k}, model);
+    if q.quantity=="vector"
+        results{k}=evaluate_vector_query(dataset,op,q,k);
+        queries{k}=q;
+        continue
+    end
 
     switch model
         case "virtual_field"

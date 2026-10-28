@@ -20,7 +20,7 @@
 %   masked to NaN before plotting.
 %
 % Output:
-%   Fig Exports/Morgan Setup/Offset_Comp2/Centreline_Methods_Relative_Error.svg
+%   COMSOL/Graphs/Morgan Setup/Offset_Comp2/Centreline_Methods_Relative_Error.svg
 
 clear; close all; clc;
 addpath(genpath("functs"));
@@ -32,7 +32,7 @@ if ~isfile(qFile)
 end
 
 saveFigure = true;
-exportDir = fullfile(pwd, "Fig Exports", "Morgan Setup", "Offset_Comp2");
+exportDir = msbs_graphs_dir("Morgan Setup", "Offset_Comp2");
 exportName = "Centreline_Methods_Relative_Error.svg";
 
 baseCaseIndex = 3;     % COMSOL square

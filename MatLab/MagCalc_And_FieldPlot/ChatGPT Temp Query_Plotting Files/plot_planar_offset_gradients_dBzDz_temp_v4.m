@@ -47,8 +47,7 @@ applySmoothing = true;
 smoothingWindow = 10;
 
 saveFigures = true;
-exportDir = fullfile(pwd, ...
-    "Fig Exports", "Offset_Comp2", "Planar Views", "Gradients");
+exportDir = msbs_graphs_dir("Offset_Comp2", "Planar Views", "Gradients");
 exportExt = ".png";
 
 % Larger text settings.

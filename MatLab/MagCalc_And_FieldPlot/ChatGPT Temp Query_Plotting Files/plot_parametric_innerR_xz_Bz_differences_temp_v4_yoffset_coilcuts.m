@@ -27,7 +27,7 @@
 %   - SAME colourbar limits for base and difference cases
 %
 % Export structure:
-%   Fig Exports/Half Morgan Parametrics/innerR/
+%   COMSOL/Graphs/Half Morgan Parametrics/innerR/
 
 clear; close all; clc;
 
@@ -40,7 +40,7 @@ if ~isfile(qFile)
 end
 
 saveFigures = true;
-exportDir   = fullfile(pwd, "Fig Exports", "Half Morgan Parametrics", "innerR", "25 mm Offset");
+exportDir   = msbs_graphs_dir("Half Morgan Parametrics", "innerR", "25 mm Offset");
 exportExt   = ".svg";
 
 % ONE shared colour-limit setting for both base and difference plots:

@@ -16,7 +16,9 @@ for k = 1:numel(plot_records)
     key = char(string(r.plot.group));
     qtype = lower(string(r.query.type));
 
-    if contains(qtype, "line")
+    if startsWith(qtype,"vector_")
+        family = "vector";
+    elseif contains(qtype, "line")
         family = "line";
     elseif contains(qtype, "plane")
         family = "plane";
@@ -26,7 +28,7 @@ for k = 1:numel(plot_records)
 
     if isKey(groupFamily, key)
         if string(groupFamily(key)) ~= family
-            error("Plot group %s contains both line and plane queries. Use separate group numbers.", key);
+            error("Plot group %s mixes scalar-plane, line or vector queries. Use separate groups.", key);
         end
     else
         groupFamily(key) = char(family);
