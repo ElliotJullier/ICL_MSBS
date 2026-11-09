@@ -60,6 +60,7 @@ cfg.magnets.automatic.dipole_moment_override_Am2 = [];
 cfg.magnets.sets = struct([]);
 
 cfg.mass.shell_mass_factor = 1.30;
+cfg.mass.non_magnet_mass_kg = []; % Fixed residual mass for magnet-size comparisons.
 cfg.mass.total_mass_override_kg = [];
 cfg.mass.centre_of_mass_override_B_m = [];
 cfg.mass.inertia_override_B_kgm2 = [];
@@ -78,6 +79,10 @@ cfg.aero.direct_wrench_frame = "T";
 % static row, except harmonic motion where samples_per_cycle rows are generated.
 cfg.scenarios = table();
 cfg.max_scenarios = 4096;
+cfg.scenario_set.relationship = "fixed_envelope";
+% Absolute CoM coordinates in T, independent of plotting body_origin_T_m.
+cfg.position.mode = "nominal"; % nominal | specified | harmonic_analytic
+cfg.position.reference_C_T_m = [0;0;0];
 
 % Motion is either absent, explicitly specified in cfg.scenarios, or generated
 % from a small-angle single-frequency harmonic definition.

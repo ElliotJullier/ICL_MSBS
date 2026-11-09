@@ -355,3 +355,20 @@ Every scenario/magnet-set combination is solved pointwise first. No synthetic wr
 | `output.root_folder` | `results` | Root output folder. |
 | `output.save_fig` | false | Also save MATLAB `.fig`. |
 | `output.overwrite_existing` | false | Protect prior run folder. |
+
+## Research study extensions (6 November 2026)
+
+| Field | Default | Meaning |
+|---|---|---|
+| `mass.non_magnet_mass_kg` | empty | Optional fixed residual model mass. Total mass is this plus the resolved magnet mass; mutually exclusive with total-mass override. Empty preserves the legacy shell-factor calculation. |
+| `scenario_set.relationship` | `fixed_envelope` | `independent`, `fixed_envelope`, or `time_history`. Both rankings remain exported; use the fixed ranking for immutable hardware. Histories require finite, strictly increasing time within optional `scenario_group_id`. |
+| `position.mode` | `nominal` | `nominal`, `specified`, or `harmonic_analytic`. No implicit integration. |
+| `position.reference_C_T_m` | `[0;0;0]` m | Absolute reference CoM in tunnel axes, independent of plotting body origin and magnet-set CoM in B. |
+
+For `specified` position, supply scenario columns `x_C_T_m`, `y_C_T_m`, `z_C_T_m` in metres; optional `vx_C_T_mps`, `vy_C_T_mps`, `vz_C_T_mps` must be supplied together. Position columns denote absolute CoM, not body origin. `harmonic_analytic` is restricted to pure translational harmonic motion and follows the existing helper's fixed B translation axes; it rejects simultaneous angular oscillations. Known harmonic position and velocity are calculated analytically. Numerical acceleration integration is deferred.
+
+Scenario attitude may alternatively use the cell column `attitude_R_TB`, with one proper 3-by-3 rotation per row. It cannot be combined with Euler-angle columns or generated harmonic attitude. This permits explicit source-frame conversion without Euler sign ambiguity or gimbal singularities.
+
+The local field remains `Bx_T,By_T,Bz_T` at the instantaneous CoM. The new `BOx_T,BOy_T,BOz_T` columns are the fixed-tunnel-origin intercept, `B_O=B_C-G*r_C`, of the same affine field. One common tensor G is exported. This is an affine reference conversion, not a measured global coil field. Results now include total mass, fixed residual mass, magnet volume, absolute CoM and scenario relationship.
+
+The constructors and reproducible batch runner in `research` implement the literature study without replacing legacy cases. See the research report for evidence tiers, source transcriptions, geometry rejections and the assumptions behind coefficient transfer across Reynolds numbers/blockages.

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — aerodynamic research extensions (6 November 2026)
+
+- Added explicit scenario relationships, grouped time-history validation, absolute CoM positions and the affine tunnel-origin field intercept.
+- Added a fixed non-magnet mass option for magnet-volume comparisons and explicit per-row rotation matrices for source-frame conversions.
+- Added research constructors for the 168-case tunnel/blockage/gravity/magnet-volume comparison, five auxiliary layout concepts, source audits, complete-state extrema and a single generated report.
+- Preserved legacy cases and the v0.4.1 STF solver/objective. See `research/README.md` for reproduction and the limitations of conditional aerodynamic inputs.
+- Baseline: 65 passing tests; extended suite: 76 passing tests.
+
 ## 0.4.1 — Separate relative B/G and reference-volume sensitivities
 
 - Kept the primary magnetic ranking metric as RMS affine-field magnitude over a centred cube whose side is the largest resolved model dimension.

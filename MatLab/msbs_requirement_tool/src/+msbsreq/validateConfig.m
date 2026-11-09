@@ -6,6 +6,15 @@ arguments
 end
 
 warnings=strings(0,1);
+mustBeMember(cfg.scenario_set.relationship,["independent","fixed_envelope","time_history"]);
+mustBeMember(cfg.position.mode,["nominal","specified","harmonic_analytic"]);
+localThreeVector(cfg.position.reference_C_T_m,'position.reference_C_T_m');
+if ~isempty(cfg.mass.non_magnet_mass_kg)
+    localNonnegative(cfg.mass.non_magnet_mass_kg,'fixed non-magnet mass');
+    if ~isempty(cfg.mass.total_mass_override_kg)
+        error('msbsreq:ConflictingMassInputs','Choose fixed non-magnet mass or total-mass override, not both.');
+    end
+end
 rotationTolerance=cfg.validation.rotation_tolerance;
 if upper(string(cfg.frames.tunnel_to_earth.sequence))~="ZYX" || ...
         upper(string(cfg.frames.body_to_tunnel.sequence))~="ZYX"
@@ -219,6 +228,14 @@ end
 
 attitude={'yaw_deg','pitch_deg','roll_deg'};
 present=ismember(attitude,T.Properties.VariableNames);
+if ismember('attitude_R_TB',T.Properties.VariableNames)
+    if any(present) || cfg.motion.mode=="harmonic" || ~iscell(T.attitude_R_TB)
+        error('msbsreq:AmbiguousScenarioAttitude','Matrix attitude requires a cell column and no Euler/harmonic attitude.');
+    end
+    for k=1:height(T)
+        localRotation(T.attitude_R_TB{k},cfg.validation.rotation_tolerance,'scenario attitude_R_TB');
+    end
+end
 if any(present) && ~all(present)
     error('msbsreq:InvalidScenarioAttitude','Scenario attitude requires yaw_deg, pitch_deg, and roll_deg together.');
 end

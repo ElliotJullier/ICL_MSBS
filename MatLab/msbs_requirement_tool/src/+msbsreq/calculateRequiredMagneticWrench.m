@@ -43,6 +43,9 @@ scenario.aero_reference_point_B_m=row.aero_reference_point_B_m{1};
 scenario.metadata=row.metadata{1};
 scenario.motion_phase_rad=row.motion_phase_rad;
 scenario.time_s=row.time_s;
+scenario.r_C_T_m=row.r_C_T_m{1}(:);
+scenario.v_C_T_mps=row.v_C_T_mps{1}(:);
+scenario.scenario_relationship=string(row.scenario_relationship);
 end
 
 function total=localAdditionalWrench(T,scenario,centreOfMassB)

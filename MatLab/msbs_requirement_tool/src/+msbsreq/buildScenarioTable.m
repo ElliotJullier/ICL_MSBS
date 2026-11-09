@@ -12,6 +12,7 @@ for i=1:height(T)
 end
 scenarios=struct2table(rows,'AsArray',true);
 scenarios=localAppendMetadataColumns(scenarios,rows);
+scenarios=msbsreq.resolvePosition(cfg,scenarios);
 end
 
 function T=localInputScenarioTable(cfg)
@@ -100,7 +101,9 @@ switch cfg.motion.mode
         motion.alpha_T=msbsreq.transformVector(alpha_B,"B",frames);
 
     otherwise
-        if all(ismember({'yaw_deg','pitch_deg','roll_deg'},T.Properties.VariableNames))
+        if ismember('attitude_R_TB',T.Properties.VariableNames)
+            R_TB=T.attitude_R_TB{i};
+        elseif all(ismember({'yaw_deg','pitch_deg','roll_deg'},T.Properties.VariableNames))
             R_TB=msbsreq.rotationZYX([T.yaw_deg(i) T.pitch_deg(i) T.roll_deg(i)],"deg");
         else
             R_TB=baseR;
@@ -191,7 +194,7 @@ function names=localReservedColumns()
 names=["scenario_name","speed_mps","CD","CY","CL","Cl_roll","Cm","Cn", ...
     "Fx_aero_N","Fy_aero_N","Fz_aero_N","Mx_aero_Nm","My_aero_Nm","Mz_aero_Nm", ...
     "aero_frame","aero_reference_point_B_m","time_s","phase_rad", ...
-    "yaw_deg","pitch_deg","roll_deg","a_x","a_y","a_z", ...
+    "yaw_deg","pitch_deg","roll_deg","attitude_R_TB","a_x","a_y","a_z", ...
     "omega_x","omega_y","omega_z","alpha_x","alpha_y","alpha_z"];
 end
 

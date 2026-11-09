@@ -10,8 +10,13 @@ magnets = magnetSet.magnets;
 magnetMasses = reshape([magnets.mass_kg],[],1);
 magnetMassTotal = sum(magnetMasses);
 if isempty(cfg.mass.total_mass_override_kg)
-    totalMass = cfg.mass.shell_mass_factor*magnetMassTotal;
-    totalMassSource = "shell_mass_factor";
+    if isempty(cfg.mass.non_magnet_mass_kg)
+        totalMass = cfg.mass.shell_mass_factor*magnetMassTotal;
+        totalMassSource = "shell_mass_factor";
+    else
+        totalMass = magnetMassTotal + cfg.mass.non_magnet_mass_kg;
+        totalMassSource = "fixed_non_magnet_mass";
+    end
 else
     totalMass = cfg.mass.total_mass_override_kg;
     totalMassSource = "override";

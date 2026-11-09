@@ -21,6 +21,8 @@ cfg.magnets.mode = lower(string(cfg.magnets.mode));
 cfg.magnets.remanence_selection = lower(string(cfg.magnets.remanence_selection));
 cfg.motion.mode = lower(string(cfg.motion.mode));
 cfg.motion.frame = upper(string(cfg.motion.frame));
+cfg.position.mode = lower(string(cfg.position.mode));
+cfg.scenario_set.relationship = lower(string(cfg.scenario_set.relationship));
 cfg.magnetic.model = lower(string(cfg.magnetic.model));
 
 cfg.tunnel.speed_mps = double(cfg.tunnel.speed_mps);
