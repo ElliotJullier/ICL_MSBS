@@ -34,6 +34,8 @@ classdef TestRequirementsRevision < matlab.unittest.TestCase
             for i=1:numel(large.magnets.sets)
                 a=large.magnets.sets(i).magnets;
                 b=small.magnets.sets(i).magnets;
+                volumes=arrayfun(@(m)prod(m.dimensions_local_m),a);
+                t.verifyTrue(all(volumes(2:end)<volumes(1)));
                 t.verifyEqual(sum(arrayfun(@(m)prod(m.dimensions_local_m),b)), ...
                     .1*sum(arrayfun(@(m)prod(m.dimensions_local_m),a)),'AbsTol',1e-12);
                 for R=[{eye(3)};poses].'

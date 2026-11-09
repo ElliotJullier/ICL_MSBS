@@ -1,8 +1,19 @@
 # MSBS aerodynamic requirements revision handoff
 
-9 November 2026. The previous report, input archive and code are the baseline at `ba17ce9d282a50691794a68188b526036ff1c53e`. The design summary for this revision is in `MSBS_Aerodynamic_Requirements_Revision.pdf`. The earlier report explains the original portfolio and preserves the original digitisation and results.
+9 November 2026. The design summary is `MSBS_Aerodynamic_Requirements_Revision.pdf`. Revision 2 is preserved at `e793766cb9da69f86ea1ca8b5b988cf30fc049bc`. The first study and its report are preserved at `ba17ce9d282a50691794a68188b526036ff1c53e`.
 
-## Request and decisions
+## Revision 3 review
+
+- The new 5–50 m/s operating summary filters the existing solved rows. Its field and gradient maxima are 0.338438 T and 2.893219 T/m. The gradient controller is the 0.6 m horizontal Ahmed at 20% blockage, 10% magnet volume and 46.017 m/s. The largest individual gradient component in the operating window is 2.078793 T/m for a cuboid. The separate solved-grid tables preserve every matched-Re calculation, including the Morse histories below 2 m/s. Three larger Ahmed geometries reach the source Re below 50 m/s.
+- The Morse figure now reproduces the source wavelength axes and marks the figure-linked test locations. The P+S value of about 12 T/m stays historical and conditional. The controlling acceleration is about 269 m/s², and the operating-scope page explains its dependence on drive amplitude and frequency.
+- The paper shortlist is a review queue. No source or aerodynamic coefficients from the new papers were implemented. Start with Ajmal et al. for forced transverse air data and Matsuda et al. for inline air response. Blackburn and Melbourne provide a smaller-amplitude air experiment. The PDF provides six DOIs and extraction checks. SC(2)-0714 is dropped from the active cases and CAD gallery. Its previous artifacts remain in Revision 2.
+- Layout 5 has a larger main block and smaller auxiliaries. Every auxiliary across the five revised layouts is smaller than its main magnet by volume. The original portfolio constructor retains its original layout geometry. The current solver study was rerun with the smaller auxiliaries, with all 81 tests passing.
+- The cuboid report shows all 21 candidates for a reference build, their eligibility, fields and gradients, and an internal-view gallery. `candidate_hardware_peaks.csv` extends the numerical comparison to every build. Ahmed and wing views have shaded faces and outlined seams. Orthographic overlay arrows keep both poles' glyphs in view. The body-aligned, oblique and tunnel-aligned wing blocks use the same study attitude in the report.
+- Sawada's roll current is compared to the study's parallel and crossed pairs. The Fig. 5 gradient slope is an approximate figure read and the unmeasured tensor terms are stated assumptions. `audit_roll_layouts` produces `roll_per_magnet_unit_response.csv` and `roll_layout_unit_response.csv` for eight unit inputs and three roll angles. The audit checks every summed wrench against the solver map.
+- The 25 kg threshold remains a scaling example, without a hard filter. Section 8 compares uniform scaling with shell removal at fixed geometry and shows the consequences for Re, U and blockage.
+- Appendix A and `component_targets_5_to_50.csv` provide the operating-speed targets. Appendix B and `component_targets.csv` retain the full solved grid. Gradient bins are 0.25 T/m. Combined, V100 and V10 field and gradient histograms use common axes. The split bin counts are exported to the matching `*_histogram_counts_by_magnet.csv` tables.
+
+## Revision 2 study decisions
 
 - The user confirmed upward-only vertical flow, 10% of large magnet **volume**, and maximum projected blockage over the tested attitudes.
 - The revised user instruction caps the entire installed magnet assembly at 30% of the square test-section side. The implementation measures the axis-wise extent of the union of all magnet corners in body axes and at all tested tunnel attitudes. Maximum measured ratio is 0.30. A block diagonal is a different dimension.
@@ -32,6 +43,7 @@ addpath('research')
 run_requirements_revision
 export_revision_cad
 audit_revision
+audit_roll_layouts
 ```
 
 The default output is `research/outputs/revision`, which is ignored by Git. Copy the packaged results into that path or regenerate them. The report build requires Python with NumPy, pandas, ReportLab and Pillow. PDFium and Pillow were used for render verification.
@@ -56,7 +68,7 @@ Load any exact input MAT file and run `plot_revision_cad(cfg,setIndex,scenarioIn
 | `selection_sensitivity.csv`, `hardware_rankings.csv` | Re-solved J for L, L/2, 2L and 0.30H. Full fixed candidate ranks and independent operating-group winners. |
 | `installed_magnets_and_mass.csv` | Magnet centres, dimensions, directions, volume, mass, cap checks, calculated CoM and inertia tensor for every set. |
 | `morse_figure_reads.csv`, `PplusS_trace_sensitivity.csv`, `phase_resolution_check.csv` | Figure-linked inputs, conditional alternate wake screen and convergence check. |
-| `cad/`, `charts/` | MATLAB figure/PNG previews and editable SVG report charts. |
+| `cad/`, `charts/` | MATLAB figure/PNG previews, editable SVG report charts and the cuboid gallery thumbnails. |
 | `logs/` in the results archive | MATLAB final suite/portfolio output, CAD/initial run output and P+S audit. |
 | `evidence/` in the results archive | The published isolated-wing figure used for the new approximate numeric reads. The earlier OneDrive delivery contains the supplied source archive. |
 

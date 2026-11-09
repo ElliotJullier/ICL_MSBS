@@ -37,14 +37,15 @@ def main(destination):
                              "[Primary article](https://doi.org/10.1177/1756829316638206)\n")
     for name in ("MSBS_Aerodynamic_Requirements_Revision.pdf", "REVISION_WORK_LOG.md"):
         shutil.copy2(RESEARCH / name, destination / name)
-    for name in ("component_targets.csv", "coverage.csv", "distribution_statistics.csv"):
+    tables = ["component_targets.csv", "component_targets_5_to_50.csv", "coverage.csv", "distribution_statistics.csv"]
+    for name in tables:
         shutil.copy2(OUT / name, destination / name)
     for path in [code, data]:
         with ZipFile(path) as archive:
             assert archive.testzip() is None
     files = [destination / name for name in (
         code.name, data.name, "MSBS_Aerodynamic_Requirements_Revision.pdf", "REVISION_WORK_LOG.md",
-        "component_targets.csv", "coverage.csv", "distribution_statistics.csv",
+        *tables,
     )]
     manifest = {
         "git_commit": commit,

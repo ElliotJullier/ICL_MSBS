@@ -38,7 +38,7 @@ for k=1:numel(names)
     sets(end).magnets=m;
 end
 if auxiliary
-    sets=[sets msbsstudy.auxiliaryLayouts(min(d,cap),c,1)];
+    sets=[sets msbsstudy.auxiliaryLayouts(min(d,cap),c,1,true)];
     % Auxiliary source candidates were specified in B. Re-express every
     % cuboid with its magnetisation along its own +x axis.
     for k=1:numel(sets)

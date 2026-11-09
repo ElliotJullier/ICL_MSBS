@@ -16,7 +16,7 @@ scenarios=msbsreq.buildScenarioTable(cfg);
 R=scenarios.R_TB{scenarioIndex};
 magnets=cfg.magnets.sets(setIndex).magnets;
 fig=figure('Visible',visibility,'Color','white','Position',[60 100 1100 470]);
-layout=tiledlayout(fig,1,2,'Padding','compact');
+layout=tiledlayout(fig,1,2,'Padding','loose','TileSpacing','compact');
 title(layout,strrep(cfg.meta.family+"  |  "+cfg.magnets.sets(setIndex).name+"  |  "+ ...
     scenarios.scenario_name(scenarioIndex),"_"," "),'Interpreter','none');
 left=nexttile(layout);
@@ -24,28 +24,48 @@ right=nexttile(layout);
 bodyColor=[.39 .58 .66];
 localBody(left,g,R,bodyColor,true);
 localBody(right,g,R,bodyColor,false);
-hold(right,'on');
+modelLength=max(g.outer_dimensions_B_m);
+limits=.66*modelLength;
+for ax=[left right]
+    axis(ax,'equal');
+    axis(ax,[-limits limits -limits limits -limits limits]);
+    axis(ax,'vis3d');
+    view(ax,42,24);
+    camproj(ax,'orthographic');
+    camzoom(ax,.78);
+    xlabel(ax,'x_T [m]');ylabel(ax,'y_T [m]');zlabel(ax,'z_T [m]');
+    grid(ax,'on');
+end
+drawnow;
+toViewer=campos(right).'-camtarget(right).';
+toViewer=toViewer/norm(toViewer);
 for j=1:numel(magnets)
     m=magnets(j);
     color=[.93 .61 .16];
     if j>1,color=[.18 .63 .49];end
     localBox(right,m.dimensions_local_m,R*m.centre_B_m,R*m.R_BM,color,1);
     direction=R*m.R_BM*m.magnetisation_direction_M;
-    L=.45*max(m.dimensions_local_m);
-    start=R*m.centre_B_m+0.56*sum(abs(m.R_BM.'*R.'*[0;0;1]).*m.dimensions_local_m)*[0;0;1];
-    quiver3(right,start(1),start(2),start(3),L*direction(1),L*direction(2),L*direction(3), ...
-        0,'Color',[.18 .09 .07],'LineWidth',2,'MaxHeadSize',.75);
+    L=max(.105*modelLength,min(.22*modelLength,.7*max(m.dimensions_local_m)));
+    localArrow(right,R*m.centre_B_m,direction,L,toViewer,modelLength);
 end
 title(left,'Opaque exterior');
-title(right,'Interior assembly and magnetisation');
-limits=.58*max(g.outer_dimensions_B_m);
-for ax=[left right]
-    axis(ax,'equal');
-    axis(ax,[-limits limits -limits limits -limits limits]);
-    view(ax,42,24);
-    xlabel(ax,'x_T [m]');ylabel(ax,'y_T [m]');zlabel(ax,'z_T [m]');
-    grid(ax,'on');
+title(right,'Interior assembly and magnetisation glyphs');
 end
+
+function localArrow(ax,centre,direction,L,toViewer,modelLength)
+% The orthographic overlay keeps the arrow aligned with its magnet on the
+% page while lifting it clear of the rendered bodies along the view ray.
+centre=centre+1.3*modelLength*toViewer;
+tip=centre+L*direction/2;
+tail=centre-L*direction/2;
+base=tip-.32*L*direction;
+side=cross(toViewer,direction);
+side=side/norm(side);
+head=[tip,base+.15*L*side,base-.15*L*side];
+ink=[.13 .055 .035];
+line(ax,[tail(1) base(1)],[tail(2) base(2)],[tail(3) base(3)], ...
+    'Color',ink,'LineWidth',2.3,'Clipping','off');
+fill3(ax,head(1,:),head(2,:),head(3,:),ink,'EdgeColor',ink,'Clipping','off');
 end
 
 function localBody(ax,g,R,color,opaque)
@@ -69,12 +89,24 @@ switch g.type
         i=(1:n).';
         next=[2:n 1].';
         faces=[i next next+n i+n];
-        patch(ax,'Vertices',p.','Faces',faces,'FaceColor',color, ...
+        sides=p(:,next)-p(:,i);
+        normal=cross(sides,p(:,i+n)-p(:,i),1);
+        normal=normal./max(vecnorm(normal),eps);
+        shade=.70+.28*abs([.4 -.3 .86]*normal).';
+        patch(ax,'Vertices',p.','Faces',faces,'FaceVertexCData',shade.*color, ...
+            'FaceColor','flat', ...
             'FaceAlpha',double(opaque),'EdgeColor','none');
-        fill3(ax,p(1,i),p(2,i),p(3,i),color,'FaceAlpha',double(opaque),'EdgeColor',color);
-        fill3(ax,p(1,i+n),p(2,i+n),p(3,i+n),color,'FaceAlpha',double(opaque),'EdgeColor',color);
-        for k=unique(round(linspace(1,n,min(n,8))))
-            plot3(ax,p(1,[k k+n]),p(2,[k k+n]),p(3,[k k+n]),'-','Color',color);
+        edge=.58*color;
+        fill3(ax,p(1,i),p(2,i),p(3,i),.83*color,'FaceAlpha',double(opaque),'EdgeColor',edge,'LineWidth',1.1);
+        fill3(ax,p(1,i+n),p(2,i+n),p(3,i+n),.91*color,'FaceAlpha',double(opaque),'EdgeColor',edge,'LineWidth',1.1);
+        seams=1:n;
+        if n>8
+            [~,leading]=min(xz(:,1));
+            [~,trailing]=max(xz(:,1));
+            seams=unique([leading trailing]);
+        end
+        for k=seams
+            plot3(ax,p(1,[k k+n]),p(2,[k k+n]),p(3,[k k+n]),'-','Color',edge,'LineWidth',1);
         end
     otherwise
         localBox(ax,g.outer_dimensions_B_m,zeros(3,1),R,color,double(opaque));

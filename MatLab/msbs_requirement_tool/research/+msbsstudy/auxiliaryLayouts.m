@@ -1,7 +1,8 @@
-function sets = auxiliaryLayouts(envelope,centre,volumeFraction)
+function sets = auxiliaryLayouts(envelope,centre,volumeFraction,smallerAuxiliaries)
 %AUXILIARYLAYOUTS Five disjoint source-inspired layouts, equal magnet volume.
 % 3 automatic main-magnet axes per layout; auxiliary pair has zero net dipole.
 % All dimensions/centres lie in an analytically valid inscribed cuboid.
+if nargin<4,smallerAuxiliaries=false;end
 d=envelope(:);c=centre(:); sets=struct([]); ii=0;
 for layout=1:5
     if layout<=2
@@ -17,6 +18,10 @@ for layout=1:5
     else
         dims={[.95;.32;.32],[.95;.32;.32],[.95;.32;.32],[.95;.32;.32],[.95;.32;.32]};
         pts={[0;0;0],[0;.34;0],[0;-.34;0],[0;0;.34],[0;0;-.34]};
+        if smallerAuxiliaries
+            dims=[{[.95;.38;.38]},repmat({[.95;.28;.28]},1,4)];
+            pts={[0;0;0],[0;.35;0],[0;-.35;0],[0;0;.35],[0;0;-.35]};
+        end
         dirs={[],[0;0;1],[0;0;-1],[0;1;0],[0;-1;0]};
     end
     % Each layout gets the same total volume, 0.4864 of envelope volume.

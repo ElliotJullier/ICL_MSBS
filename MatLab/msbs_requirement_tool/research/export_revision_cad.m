@@ -18,31 +18,23 @@ for family=families
         if family=="cuboid" || family=="ahmed"
             names=string({cfg.magnets.sets.name});
             toPlot=[1 find(endsWith(names,'main_axis1'))];
+            if family=="cuboid" && H==.6,toPlot=1:numel(names);end
         end
         for k=toPlot
-            localSave(cfg,k,idx,dest);
+            pose=idx;
+            if family=="cuboid" && ~endsWith(cfg.magnets.sets(k).name,"last_pose"),pose=3;end
+            localSave(cfg,k,pose,dest);
         end
         if family=="ahmed",beta=.10;end
     end
 end
-cfg=msbsreq.defaultConfig();
-cfg.meta.family="sc20714_geometry_only";
-cfg.meta.case_id="sc20714_geometry_only";
-[cfg,~]=msbsstudy.revisionWing(cfg,1,.10,"sc20714",3);
-cfg.tunnel.cross_section.width_m=1;
-cfg.tunnel.cross_section.height_m=1;
-cfg=msbsreq.resolveConfig(cfg);
-cfg.scenarios=table("geometry_only",7,0,0,'VariableNames',{'scenario_name','pitch_deg','yaw_deg','roll_deg'});
-g=msbsreq.buildGeometry(cfg,msbsreq.buildTunnel(cfg));
-cfg.magnets.sets=msbsstudy.cappedMagnets(g,1,{msbsreq.rotationZYX([0 7 0],"deg")},1,false);
-save(fullfile(dest,'sc20714_geometry_only_input.mat'),'cfg');
-localSave(cfg,1,1,dest);
 end
 
 function localSave(cfg,index,scenarioIndex,dest)
 f=plot_revision_cad(cfg,index,scenarioIndex,"off");
 stem=fullfile(dest,cfg.meta.case_id+"_"+cfg.magnets.sets(index).name);
 savefig(f,stem+".fig");
-exportgraphics(f,stem+".png",'Resolution',140);
+set(f,'PaperPositionMode','auto');
+print(f,stem+".png",'-dpng','-r140');
 close(f);
 end
