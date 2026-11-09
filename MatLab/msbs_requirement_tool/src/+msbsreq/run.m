@@ -23,7 +23,7 @@ massProperties=repmat(msbsreq.calculateMassProperties(cfg,geometry,magnetSets(1)
 for i=2:numel(magnetSets)
     massProperties(i)=msbsreq.calculateMassProperties(cfg,geometry,magnetSets(i));
 end
-if isempty(cfg.mass.solid_abs_density_kgm3)
+if isempty(cfg.mass.solid_abs_density_kgm3) && isempty(cfg.mass.solid_body_density_kgm3)
     warnings(end+1,1)="Mass properties use the hybrid explicit-magnet plus uniformly distributed shell approximation unless overridden.";
 end
 if cfg.motion.mode=="harmonic" || localScenarioAttitudeVaries(cfg.scenarios)

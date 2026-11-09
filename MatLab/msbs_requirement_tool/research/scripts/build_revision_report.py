@@ -206,9 +206,10 @@ def scatter(peaks):
 
 
 def coverage_chart(df):
-    d=Drawing(W,190)
-    legend(d, 42, 170)
-    x,y,w,h=97,33,388,110
+    h=22*len(FAMILIES)
+    d=Drawing(W,h+80)
+    legend(d, 42, h+60)
+    x,y,w=97,33,388
     low,high=.5,50
     xf=lambda v: x+math.log(v/low,high/low)*w
     for u in [.5,1,2,5,10,20,50]:
@@ -474,8 +475,8 @@ def report_overview(df,operating,coverage,candidates):
          "they affect. A phase-grid check addresses numerical sampling. It cannot establish the amplitude of missing harmonics or the validity of a coefficient transfer.")
 
 
-def report_sources(df, reads, hardware):
-    chapter("03A  /  SOURCE WORKING", "Sphere and sharp-edged cuboid")
+def report_sources(df, reads, hardware, standalone=False):
+    chapter("09A  /  SOURCE WORKING" if standalone else "03A  /  SOURCE WORKING", "Sphere and sharp-edged cuboid")
     para("<b>Sphere.</b> Achenbach Fig. 4, printed p. 568, gives the measured drag crisis. Read representative pre-crisis, "
          "crisis and post-crisis points by tracing the experimental curve horizontally to Re and vertically to C<sub>D</sub>. "
          "The narrow transition is sensitive to roughness, turbulence and point placement. Use D = H sqrt(4 blockage / pi), "
@@ -502,9 +503,10 @@ def report_sources(df, reads, hardware):
          "Multiply force coefficients by qlw in T. Multiply moments by qlw·l in Bp and rotate into T. "
          "The aerodynamic datum is the geometric centre. The tool shifts the moments to C.", "Small")
     cad("cuboid_T060*b10*layout1_main_axis1.png",143)
-    report_hardware_variants(hardware)
+    if not standalone:
+        report_hardware_variants(hardware)
 
-    chapter("03B  /  SOURCE WORKING", "Yawed Ahmed body")
+    chapter("09B  /  SOURCE WORKING" if standalone else "03B  /  SOURCE WORKING", "Yawed Ahmed body")
     para("Use Meile et al. Fig. 1 for the 1.044 × 0.389 × 0.288 m body, 35 deg slant and 50 mm ground gap. "
          "Read the 0 and 15 deg points in Figs. 18 and 20, printed pp. 42–43, on the same beta and U = 30 m/s curves. "
          "Read uncertainty is of order 0.02–0.04 in each plotted coefficient. Use source symmetry for head-on lateral force, "
@@ -527,7 +529,7 @@ def report_sources(df, reads, hardware):
          "The minimum length to reach Re 2.0475 million at 50 m/s with the stated air is 0.605 m. "
          "Their lengths are about 0.657, 0.776 and 1.096 m.")
 
-    chapter("03C  /  SOURCE WORKING", "Finite NACA 0012 at AR = 1")
+    chapter("09C  /  SOURCE WORKING" if standalone else "03C  /  SOURCE WORKING", "Finite NACA 0012 at AR = 1")
     para("Chinwicharnam and Thipyopas Fig. 6 panels (a), (b) and (c) report simultaneous lift, drag and quarter-chord moment "
          "for the isolated rectangular wing. Table 1 gives chord and span of 0.30 m. Their 1 m square KU facility measured "
          "the diamond, circle and square series at chord Re 129,000, 215,000 and 300,000. The figure also includes a separate "
@@ -548,9 +550,11 @@ def report_sources(df, reads, hardware):
     cad("naca0012_T060*single_body_x.png",144)
     para("The magnet fit prism is between 10% and 55% chord. The available height is the lowest upper ordinate minus the "
          "highest lower ordinate throughout that interval. The sampled NACA profile and section prism are used for CAD, projected area "
-         "and ABS mass. The source AR of 1 is retained even at 20% blockage. Wall effects remain outside the sizing model.", "Small")
-    para("Both wing-aligned and tunnel-aligned blocks were evaluated. This view is body +x, along the wing chord at 45 deg. "
-         "Section 4 shows the same test attitude with the intermediate and tunnel-aligned blocks.", "Small")
+         "and "+("LW-PLA" if standalone else "ABS")+" mass. The source AR of 1 is retained even at 20% blockage. Wall effects remain outside the sizing model.", "Small")
+    para("Both wing-aligned and tunnel-aligned blocks were evaluated. This view is body +x, along the wing chord at 45 deg. "+
+         ("The hardware section shows " if standalone else "Section 4 shows ")+"the same test attitude with the intermediate and tunnel-aligned blocks.", "Small")
+    if standalone:
+        return
 
     chapter("03D  /  SOURCE WORKING", "Morse and Williamson wake selection")
     para("Their water-channel experiment imposed transverse motion at Re<sub>D</sub> = 4,000, D = 38.1 mm and span 381 mm. "
@@ -653,8 +657,8 @@ def report_sources(df, reads, hardware):
          "load also includes m a. This is why the cylinder's aerodynamic load can be small at the phase with the largest gradient.")
 
 
-def report_hardware_variants(hardware):
-    chapter("03A  /  HARDWARE VARIANTS", "Every cuboid layout and main orientation")
+def report_hardware_variants(hardware,standalone=False):
+    chapter("04  /  HARDWARE VARIANTS" if standalone else "03A  /  HARDWARE VARIANTS", "Every cuboid layout and main orientation")
     para("The 0.6 m horizontal, 10% blockage, V100 cuboid is the reference for this comparison. All candidates below were "
          "solved at all five attitudes at the source-matched U and Re. Each auxiliary layout combines the offsets and polarities "
          "shown with each of the three main directions +x, +y and +z in body axes. The CAD archive includes all candidates.")
@@ -674,9 +678,9 @@ def report_hardware_variants(hardware):
     para("The single blocks test body +x, +y, +z, two 30 deg rotations from +x and tunnel +x at the last attitude. "
          "A 0/5 row reports the best-fit fields from a rejected wrench solution. Read those values as diagnostic outputs. "
          "The full CSV identifies the controlling angle separately for B and G for every candidate and configuration.", "Small")
-    chapter("03A  /  CAD GALLERY", "Magnetisation across all 21 candidates")
+    chapter("04  /  CAD GALLERY" if standalone else "03A  /  CAD GALLERY", "Magnetisation across all 21 candidates")
     para("Gold is the main block, green marks the auxiliaries and dark arrows show each magnetisation direction. "
-         "The cuboid is shown at alpha 25°, beta −45° except M06, which is shown at the last pose where its magnet aligns with tunnel x. "
+         "The cuboid is shown at alpha 25°, beta −45°. The tunnel-x candidate is shown at the pose where it aligns with tunnel x. "
          "The full MATLAB views include the opaque exterior and axis labels.", "Small")
     folder=OUT/"cad"
     thumb=FIG/"cuboid_gallery"
@@ -697,8 +701,8 @@ def report_hardware_variants(hardware):
     STORY.append(gallery)
 
 
-def report_roll_detail():
-    chapter("05B  /  ROLL CONTROL", "What the NAL roll current does")
+def report_roll_detail(standalone=False):
+    chapter("04  /  ROLL CONTROL" if standalone else "05B  /  ROLL CONTROL", "What the NAL roll current does")
     para("Sawada's Eq. 4 assigns the four side coils a roll pattern (I2,I4,I6,I8) = (+I,−I,−I,+I). "
          "The side-force and yaw patterns are orthogonal to this pattern, so their ideal command currents are zero for pure roll. "
          "Coils 0 and 9 drive drag, while coils 1, 3, 5 and 7 control lift and pitch. "
@@ -726,7 +730,7 @@ def report_roll_detail():
          "in the same convention. Layout 5 combines two crossed pairs. Fig. 4 shows pair magnets in a different fore/aft "
          "airframe arrangement, so the comparison is a symmetry analogue. The drawing does not fully specify NAL dipole vectors.")
 
-    chapter("05C  /  ROLL CONTROL", "Unit inputs on the five-magnet assembly")
+    chapter("04  /  ROLL CONTROL" if standalone else "05C  /  ROLL CONTROL", "Unit inputs on the five-magnet assembly")
     p=pd.read_csv(OUT/"roll_per_magnet_unit_response.csv")
     p=p[(p.layout=="layout5_main_axis1")&(p.roll_deg==0)]
     f=p[p.unit_mode=="By"].set_index("part")

@@ -1,5 +1,9 @@
 # Aerodynamic requirements research
 
+## Standalone LW-PLA study
+
+Start with `MSBS_Aerodynamic_Requirements_Standalone.pdf` and `STANDALONE_WORK_LOG.md`. Run `run_standalone_portfolio` for the source-matched air cases, both hardware policies and the separate 25 kg study. The output folder is `research/outputs/standalone`.
+
 ## November 2026 revision
 
 Use `MSBS_Aerodynamic_Requirements_Revision.pdf` and `REVISION_WORK_LOG.md` for the matched-Re portfolio with a capped magnet envelope and solid-body mass properties. `run_requirements_revision` reproduces the new study.

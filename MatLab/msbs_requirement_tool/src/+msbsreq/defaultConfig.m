@@ -62,6 +62,7 @@ cfg.magnets.sets = struct([]);
 cfg.mass.shell_mass_factor = 1.30;
 cfg.mass.non_magnet_mass_kg = []; % Fixed residual mass for magnet-size comparisons.
 cfg.mass.solid_abs_density_kgm3 = []; % Full body with disjoint magnet cavities, when supplied.
+cfg.mass.solid_body_density_kgm3 = []; % Material-neutral version for a solid body with magnet cavities.
 cfg.mass.total_mass_override_kg = [];
 cfg.mass.centre_of_mass_override_B_m = [];
 cfg.mass.inertia_override_B_kgm2 = [];

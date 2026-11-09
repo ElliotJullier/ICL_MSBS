@@ -362,6 +362,7 @@ Every scenario/magnet-set combination is solved pointwise first. No synthetic wr
 |---|---|---|
 | `mass.non_magnet_mass_kg` | empty | Optional fixed residual model mass. Total mass is this plus the resolved magnet mass; mutually exclusive with total-mass override. Empty preserves the legacy shell-factor calculation. |
 | `mass.solid_abs_density_kgm3` | empty | Optional bulk density in kg/m³. The tool subtracts each checked, disjoint magnet cavity from the solid body, adds its magnet, and computes the centre of mass and inertia. Requires containment checking and excludes mass property overrides. Custom shapes supply `solid_centroid_B_m` and `solid_unit_density_inertia_B_m5` about the solid centroid. |
+| `mass.solid_body_density_kgm3` | empty | Material-neutral solid body density in kg/m³ for the same cavity subtraction. Supply this field or the legacy ABS density field. |
 | `scenario_set.relationship` | `fixed_envelope` | `independent`, `fixed_envelope`, or `time_history`. Both rankings remain exported; use the fixed ranking for immutable hardware. Histories require finite, strictly increasing time within optional `scenario_group_id`. |
 | `position.mode` | `nominal` | `nominal`, `specified`, or `harmonic_analytic`. No implicit integration. |
 | `position.reference_C_T_m` | `[0;0;0]` m | Absolute reference CoM in tunnel axes, independent of plotting body origin and magnet-set CoM in B. |

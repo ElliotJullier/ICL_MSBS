@@ -6,6 +6,25 @@ classdef TestRequirementsRevision < matlab.unittest.TestCase
         end
     end
     methods(Test)
+        function airHistoryMatchesSpeedAccelerationAndPhase(t)
+            cfg=msbsstudy.standaloneCase("cylinder_crossflow",1,.20,"h",.1);
+            S=cfg.scenarios;
+            t.verifyEqual(unique(S.Re),160000);
+            t.verifyEqual(unique(S.aspect_ratio),4.5);
+            t.verifyEqual(S.speed_mps.*S.Re_length_m/(1.81e-5/1.225),S.Re,'RelTol',1e-12);
+            t.verifyLessThanOrEqual(max(abs(S.a_z)),50);
+            t.verifyEqual(S.CL(1),-.12*sqrt(2),'AbsTol',1e-12);
+            t.verifyGreaterThan(S.a_z(1),0);
+            t.verifyEqual(cfg.mass.solid_body_density_kgm3,540);
+        end
+        function weightCapKeepsOuterMassAndReferenceFloor(t)
+            [f,s]=msbsstudy.massCapFractions(10,[40;25;15],[3;1.5;.15],3,25);
+            t.verifyEqual(f,[.5;1;1]);
+            t.verifyEqual(s,["pass_resized";"pass_unmodified";"fail_below_10pct_reference"]);
+            [f,s]=msbsstudy.massCapFractions(26,40,1,1,25);
+            t.verifyEqual(f,0);
+            t.verifyEqual(s,"fail_body_alone_at_or_over_limit");
+        end
         function replaceOffsetCavityWithMagnet(t)
             cfg=msbsreq.defaultConfig();
             cfg.mass.solid_abs_density_kgm3=1000;

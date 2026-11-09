@@ -10,11 +10,18 @@ magnets = magnetSet.magnets;
 magnetMasses = reshape([magnets.mass_kg],[],1);
 magnetMassTotal = sum(magnetMasses);
 solidDensity = cfg.mass.solid_abs_density_kgm3;
+solidSource = "solid_abs_minus_cavities";
+solidNote = "Solid ABS with full magnet volumes removed";
+if ~isempty(cfg.mass.solid_body_density_kgm3)
+    solidDensity = cfg.mass.solid_body_density_kgm3;
+    solidSource = "solid_body_minus_cavities";
+    solidNote = "Uniform solid body with full magnet volumes removed";
+end
 shellCentre = zeros(3,1);
 if ~isempty(solidDensity)
     [shellMass,shellCentre,shellInertiaAtCentre] = localSolidMinusCavities(geometry,magnets,solidDensity);
     totalMass = shellMass+magnetMassTotal;
-    totalMassSource = "solid_abs_minus_cavities";
+    totalMassSource = solidSource;
 elseif isempty(cfg.mass.total_mass_override_kg)
     if isempty(cfg.mass.non_magnet_mass_kg)
         totalMass = cfg.mass.shell_mass_factor*magnetMassTotal;
@@ -87,7 +94,7 @@ if isempty(solidDensity)
     end
 else
     massProperties.inertia_source=totalMassSource;
-    massProperties.model_note="Solid ABS with full magnet volumes removed; rotated magnets are added using the parallel-axis theorem.";
+    massProperties.model_note=solidNote+"; rotated magnets are added using the parallel-axis theorem.";
 end
 end
 

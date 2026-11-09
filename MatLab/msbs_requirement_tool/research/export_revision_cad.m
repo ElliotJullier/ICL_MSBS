@@ -1,17 +1,24 @@
-function export_revision_cad(out)
+function export_revision_cad(out,portfolio)
 %EXPORT_REVISION_CAD Export representative MAT-ready CAD views and PNGs.
 root=string(fileparts(fileparts(mfilename('fullpath'))));
 addpath(fullfile(root,'src'),fullfile(root,'cases'),fullfile(root,'research'));
 if nargin==0,out=fullfile(root,'research','outputs','revision');end
+if nargin<2,portfolio="historical";end
 dest=fullfile(out,'cad');
 if ~isfolder(dest),mkdir(dest);end
 families=["sphere","cuboid","ahmed","naca0012","cylinder_crossflow"];
+construct=@msbsstudy.revisionCase;
+if portfolio=="standalone"
+    families=["sphere","cuboid","ahmed","naca0012","cylinder_parked","cylinder_crossflow"];
+    construct=@msbsstudy.standaloneCase;
+end
 for family=families
     beta=.10;
     if family=="cylinder_crossflow",beta=.08;end
+    if family=="cylinder_crossflow" && portfolio=="standalone",beta=.20;end
     for H=[.6 1]
         if family=="ahmed" && H==.6,beta=.20;end
-        cfg=msbsstudy.revisionCase(family,H,beta,"h",1);
+        cfg=construct(family,H,beta,"h",1);
         idx=height(cfg.scenarios);
         toPlot=1;
         if family=="naca0012",toPlot=[1 5 6];end

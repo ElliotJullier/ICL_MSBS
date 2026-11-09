@@ -112,14 +112,19 @@ for grade=requestedGrades(:).'
 end
 
 localPositive(cfg.mass.shell_mass_factor,'shell mass factor');
-if ~isempty(cfg.mass.solid_abs_density_kgm3)
-    localPositive(cfg.mass.solid_abs_density_kgm3,'solid ABS density');
+densities={cfg.mass.solid_abs_density_kgm3,cfg.mass.solid_body_density_kgm3};
+specified=densities(~cellfun(@isempty,densities));
+if numel(specified)>1
+    error('msbsreq:ConflictingSolidDensity','Supply one solid body density.');
+end
+if ~isempty(specified)
+    localPositive(specified{1},'solid body density');
     if ~isempty(cfg.mass.non_magnet_mass_kg) || ~isempty(cfg.mass.total_mass_override_kg) || ...
             ~isempty(cfg.mass.inertia_override_B_kgm2) || ~isempty(cfg.mass.centre_of_mass_override_B_m)
-        error('msbsreq:ConflictingSolidMass','Solid ABS density cannot be combined with mass property overrides.');
+        error('msbsreq:ConflictingSolidMass','Solid body density cannot be combined with mass property overrides.');
     end
     if ~cfg.magnets.check_containment
-        error('msbsreq:UncheckedSolidCavities','Solid ABS density requires checked magnet containment.');
+        error('msbsreq:UncheckedSolidCavities','Solid body density requires checked magnet containment.');
     end
 end
 if ~isempty(cfg.mass.total_mass_override_kg),localPositive(cfg.mass.total_mass_override_kg,'total mass override');end

@@ -1,8 +1,9 @@
-function run_requirements_revision(out)
+function run_requirements_revision(out,portfolio)
 %RUN_REQUIREMENTS_REVISION Reproduce matched-Re study and selection tables.
 root=string(fileparts(fileparts(mfilename('fullpath'))));
 addpath(root,fullfile(root,'src'),fullfile(root,'cases'),fullfile(root,'research'));
 if nargin==0,out=fullfile(root,'research','outputs','revision');end
+if nargin<2,portfolio="historical";end
 if ~isfolder(out),mkdir(out);end
 inputDir=fullfile(out,'inputs');
 if ~isfolder(inputDir),mkdir(inputDir);end
@@ -13,9 +14,18 @@ ranking=table();
 summary=table();
 manifest=table();
 layouts=table();
-for family=["sphere","cuboid","ahmed","naca0012","sc20714","cylinder_crossflow","cylinder_inline"]
+massAudit=table();
+massSelected=cell(0,1);
+families=["sphere","cuboid","ahmed","naca0012","sc20714","cylinder_crossflow","cylinder_inline"];
+construct=@msbsstudy.revisionCase;
+if portfolio=="standalone"
+    families=["sphere","cuboid","ahmed","naca0012","cylinder_parked","cylinder_crossflow","cylinder_inline"];
+    construct=@msbsstudy.standaloneCase;
+    info.case_function_name="msbsstudy.standaloneCase";
+end
+for family=families
     blockageValues=[.03 .10 .20];
-    if family=="cylinder_crossflow",blockageValues=[.03 .08 .10 .20];end
+    if family=="cylinder_crossflow" && portfolio=="historical",blockageValues=[.03 .08 .10 .20];end
     for H=[.6 1]
         for b=blockageValues
             for orient=["h","up"]
@@ -24,31 +34,23 @@ for family=["sphere","cuboid","ahmed","naca0012","sc20714","cylinder_crossflow",
                     reason="";
                     id="";
                     try
-                        cfg=msbsstudy.revisionCase(family,H,b,orient,fraction);
+                        cfg=construct(family,H,b,orient,fraction);
                         id=cfg.meta.case_id;
                         fprintf('REVISED STUDY %s\n',id);
                         save(fullfile(inputDir,id+".mat"),'cfg');
                         study=msbsreq.run(cfg,root,info);
-                        T=study.results;
-                        T.Re=cfg.scenarios.Re(repmat((1:height(cfg.scenarios))',numel(study.magnet_sets),1));
-                        T.source_phase_rad=nan(height(T),1);
-                        if ismember('phase_rad',cfg.scenarios.Properties.VariableNames)
-                            T.source_phase_rad=repmat(cfg.scenarios.phase_rad,numel(study.magnet_sets),1);
-                        end
-                        for field=["case_id","family","orientation","tunnel_side_m","target_maximum_blockage", ...
-                                "magnet_volume_fraction","preferred_selection"]
-                            T.(field)=repmat(cfg.meta.(field),height(T),1);
-                        end
-                        T.sizing_eligible=T.controllable;
-                        if any(family==["cuboid","ahmed"])
-                            T.sizing_eligible=T.sizing_eligible & T.map_rank==6;
-                        end
+                        T=localTag(study.results,cfg);
                         results{end+1}=T; %#ok<AGROW>
                         [S,R,W]=localRank(study,T);
                         selected{end+1}=S; %#ok<AGROW>
                         ranking=[ranking;R]; %#ok<AGROW>
                         summary=[summary;W]; %#ok<AGROW>
                         layouts=[layouts;localLayoutTable(study,id)]; %#ok<AGROW>
+                        if portfolio=="standalone" && fraction==1
+                            [audit,limited]=localMassCap(study,root,info);
+                            massAudit=[massAudit;audit]; %#ok<AGROW>
+                            if ~isempty(limited),massSelected{end+1}=limited;end %#ok<AGROW>
+                        end
                     catch err
                         if ~startsWith(string(err.identifier),"msbsstudy:"),rethrow(err);end
                         status="excluded";
@@ -67,8 +69,70 @@ writetable(localUnion(selected),fullfile(out,'selected_primary.csv'));
 writetable(ranking,fullfile(out,'hardware_rankings.csv'));
 writetable(summary,fullfile(out,'selection_sensitivity.csv'));
 writetable(manifest,fullfile(out,'coverage.csv'));
+if portfolio=="standalone",layouts=renamevars(layouts,"abs_mass_kg","body_material_mass_kg");end
 writetable(layouts,fullfile(out,'installed_magnets_and_mass.csv'));
-writetable(msbsstudy.morseInputs(),fullfile(out,'morse_figure_reads.csv'));
+if portfolio=="historical"
+    writetable(msbsstudy.morseInputs(),fullfile(out,'morse_figure_reads.csv'));
+else
+    [parked,driven]=msbsstudy.airCylinderInputs();
+    writetable(parked,fullfile(out,'ajmal_stationary_inputs.csv'));
+    writetable(driven,fullfile(out,'blackburn_motion_inputs.csv'));
+    writetable(massAudit,fullfile(out,'mass_cap_candidates.csv'));
+    writetable(localUnion(massSelected),fullfile(out,'mass_cap_selected.csv'));
+end
+end
+
+function T=localTag(T,cfg)
+rowIndex=mod((0:height(T)-1)',height(cfg.scenarios))+1;
+T.Re=cfg.scenarios.Re(rowIndex);
+T.source_phase_rad=nan(height(T),1);
+if ismember('phase_rad',cfg.scenarios.Properties.VariableNames)
+    T.source_phase_rad=cfg.scenarios.phase_rad(rowIndex);
+end
+for field=["case_id","family","orientation","tunnel_side_m","target_maximum_blockage", ...
+        "magnet_volume_fraction","preferred_selection"]
+    T.(field)=repmat(cfg.meta.(field),height(T),1);
+end
+T.sizing_eligible=T.controllable;
+if any(cfg.meta.family==["cuboid","ahmed"]),T.sizing_eligible=T.sizing_eligible & T.map_rank==6;end
+end
+
+function [audit,S]=localMassCap(study,root,info)
+cfg=study.config_resolved;
+outer=study.geometry.volume_m3*cfg.mass.solid_body_density_kgm3;
+volume=arrayfun(@(s) sum([s.magnets.volume_m3]),study.magnet_sets);
+reference=max(volume);
+fullMass=[study.mass_properties.total_mass_kg].';
+[fraction,status]=msbsstudy.massCapFractions(outer,fullMass,volume,reference,25);
+names=string({study.magnet_sets.name}).';
+n=numel(names);
+audit=table(repmat(cfg.meta.case_id,n,1),names,repmat(outer,n,1),fullMass, ...
+    volume,repmat(reference,n,1),fraction,volume.*fraction/reference, ...
+    outer+(fullMass-outer).*fraction,status,false(n,1),false(n,1), ...
+    'VariableNames',{'case_id','magnet_set_name','body_only_kg','original_mass_kg','candidate_V100_m3', ...
+    'largest_capped_V100_m3','retained_candidate_fraction','retained_reference_fraction', ...
+    'limited_mass_kg','mass_status','wrench_eligible_all_states','fixed_selected'});
+keep=find(startsWith(status,"pass"));
+S=table();
+if isempty(keep),return,end
+for i=reshape(keep,1,[])
+    for j=1:numel(cfg.magnets.sets(i).magnets)
+        cfg.magnets.sets(i).magnets(j).dimensions_local_m= ...
+            cfg.magnets.sets(i).magnets(j).dimensions_local_m*fraction(i)^(1/3);
+    end
+end
+cfg.magnets.sets=cfg.magnets.sets(keep);
+trial=msbsreq.run(cfg,root,info);
+T=localTag(trial.results,cfg);
+assert(all(T.total_mass_kg<=25+1e-9));
+for i=reshape(keep,1,[])
+    audit.wrench_eligible_all_states(i)=all(T.sizing_eligible(T.magnet_set_name==names(i)));
+end
+[S,~]=msbsstudy.selectHardware(T,T.magnetic_cost_rms_T,T.sizing_eligible,"L_model");
+if isempty(S),return,end
+S=S(S.selection_mode=="fixed_hardware",:);
+if isempty(S),return,end
+audit.fixed_selected(audit.magnet_set_name==S.magnet_set_name(1))=true;
 end
 
 function [S,R,W]=localRank(study,T)
