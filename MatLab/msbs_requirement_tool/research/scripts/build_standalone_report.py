@@ -1,5 +1,6 @@
 """Build the standalone MSBS report, operating percentiles and audit tables."""
 import math
+import re
 
 import numpy as np
 import pandas as pd
@@ -10,15 +11,20 @@ from reportlab.platypus.tableofcontents import TableOfContents
 
 import build_revision_report as b
 from build_revision_report import (
-    B, G, INK, M, W, ACCENT, COMPONENTS, GRID, GREY, J, TUNNELS,
-    cad, case_label, chart, fmt, maxrow, operation, para, ref, short_set, table, tunnel_name,
+    B, G, INK, M, W, ACCENT, GRID, GREY, J, TUNNELS,
+    cad, case_label, chart, fmt, maxrow, para, ref, short_set, table, tunnel_name,
 )
 
 OUT = b.RESEARCH / "outputs" / "standalone"
 PDF = b.RESEARCH / "MSBS_Aerodynamic_Requirements_Standalone.pdf"
+DRIVEN_KEYS = {
+    G: "||G||F [T/m]", "G_max_abs_Tpm": "Max |G_ij| [T/m]",
+    **{f"g{k}_Tpm": f"G_{k} [T/m]" for k in ("xx", "yy", "zz", "xy", "xz", "yz")},
+}
 KEYS = {
-    B: "Local max ||B|| [T]", "B_norm_T": "||B_C|| [T]", "B_O_norm_T": "||B_O|| [T]",
-    G: "||G||F [T/m]", "G_max_abs_Tpm": "Max |G_ij| [T/m]", **COMPONENTS,
+    B: "Local max ||B|| [T]", "B_norm_T": "||B|| [T]",
+    **{f"B{k}_T": f"B_{k} [T]" for k in "xyz"},
+    **DRIVEN_KEYS,
 }
 AIR = "cylinder_crossflow"
 
@@ -50,17 +56,25 @@ def section(number, title):
 def controls(row):
     if abs(row.value) < 1e-12:
         return "Zero"
-    return case_label(row) + " / " + operation(row)
+    return case_label(row) + " / " + steady_state(row.operating_group)
 
 
-def target_rows(df):
+def steady_state(group):
+    labels={"Re":"Re ", "alpha":"pitch ", "beta":"sideslip ", "yaw":"yaw "}
+    return ", ".join(
+        labels[key]+(f"{int(value):,}" if key=="Re" else value+"°")
+        for key,value in re.findall(r"(Re|alpha|beta|yaw)(-?\d+)",group)
+    ) or group
+
+
+def target_rows(df, keys=KEYS):
     """Choose observed component-wise max/P90 from equal-weight groups."""
     rows = []
     for fraction, sub in df.groupby("magnet_volume_fraction", sort=False):
         for label, sample in [("All installations", sub)]+[
             (tunnel_name(h,o),b.selected_slice(sub,h,o)) for h,o in TUNNELS
         ]:
-            for field in KEYS:
+            for field in keys:
                 peaks=sample.loc[sample[field].abs().groupby(
                     [sample.case_id,sample.operating_group],sort=False).idxmax()]
                 order=peaks.assign(magnitude=peaks[field].abs()).sort_values("magnitude",kind="stable")
@@ -84,13 +98,13 @@ def overview(steady,driven):
          f"largest gradient Frobenius norm is <b>{fmt(g[G])} T/m</b> over the fixed-hardware, source-matched "
          "5–50 m/s cases. The 25 kg study is a separate analysis at unchanged outer geometry.")
     table(["Peak","Value","Controlling case","U [m/s]","Re"],[
-        (label,fmt(r[key],4),tunnel_name(r.tunnel_side_m,r.orientation)+" / "+case_label(r)+" / "+operation(r),
+        (label,fmt(r[key],4),tunnel_name(r.tunnel_side_m,r.orientation)+" / "+case_label(r)+" / "+steady_state(r.operating_group),
          fmt(r.speed_mps),f"{r.Re:,.0f}") for key,label,r in [(B,"Local field [T]",a),(G,"Gradient [T/m]",g)]
     ],[93,55,243,53,57])
     if not driven.empty:
         p=maxrow(driven,G)
-        para(f"<b>Air-driven cylinder supplement.</b> The motion-correlated transverse histories reach "
-             f"<b>{fmt(p[G])} T/m</b>. These histories include model inertia and phase-resolved lift. "
+        para(f"<b>Cylinder in prescribed transverse motion.</b> The gradient histories reach "
+             f"<b>{fmt(p[G])} T/m</b>. These histories include model inertia and motion-correlated lift. "
              "Their aerodynamic load coverage is partial, so they have their own results table.")
     para("Use the results section for component values and outlier-resistant percentiles. The following sections "
          "explain model coverage, the hardware choices, the limitations of the field merit index, and the effect of "
@@ -106,11 +120,10 @@ def conventions():
     section("01","Conventions and the sizing model")
     table(["Term","How it is used"],[
         ("H and blockage","H is the square tunnel side, 0.6 m or 1 m. Blockage is the largest projected model area at the tested attitudes divided by H². Use 3%, 10% and 20% as geometric targets."),
-        ("Tunnel and body axes","The tunnel frame T uses +x downstream. Its +z is upward in the horizontal installation. B denotes body axes. In the upward-flow installation Earth gravity points along −x in T."),
-        ("C and O","C is the model centre of mass. O is the fixed tunnel origin. The magnetic field is referenced to one of these two points."),
-        ("B_C and B_O","Magnetic field vectors at C and O. For a displacement r_C from O to C, B_O = B_C − G r_C."),
+        ("Tunnel and body axes","The tunnel frame T uses +x downstream. Its +z is upward in the horizontal installation. Subscripts T and B identify tunnel and body coordinates where needed. In the upward-flow installation gravity points along tunnel −x."),
+        ("Field B","The steady field is evaluated at the model centre of mass C, which coincides with the tunnel origin. B_x, B_y and B_z are components in tunnel axes. In a driven history C moves with the model."),
         ("Local max ||B||","Largest Euclidean field magnitude at any installed magnet centre in one state."),
-        ("Gradient G","G_ij gives the change of field component i with position j. It is symmetric and trace-free in this local, source-free model. ||G||F combines all nine entries in quadrature."),
+        ("Gradient G","G_ij is the derivative of tunnel-axis field component i with respect to tunnel-axis coordinate j. The affine field model uses the same symmetric, trace-free G throughout its local region. The Frobenius norm ||G||F combines all nine entries in quadrature."),
         ("V100 and V10","V100 is the large capped fit for each candidate layout. V10 has 10% of that candidate's volume. The assembly, including spacing, stays within 30% of H on each evaluated axis."),
         ("State and campaign","A state is one steady speed and attitude, or one instant of a driven history. A campaign groups all states for one article, tunnel orientation, blockage and magnet-volume policy."),
     ],[102,399])
@@ -136,8 +149,9 @@ def useful_results(steady,driven,targets):
         for (panel,v),t in targets.groupby(["panel","magnet_volume_fraction"],sort=False)
         for x in [t.set_index(["metric","statistic"]).magnitude]
     ],[123,54,54,133,137])
-    para("The magnitude table is suitable for comparing channel sizing. The CSV also retains the sign and simultaneous "
-         "wrench for each observed state. Component percentiles are selected separately and can come from different tests.")
+    para("Field and gradient components use tunnel axes. The steady field components are given at the common centre of "
+         "mass and tunnel origin. Local field peaks refer to the installed magnet centres. The target CSV retains signed "
+         "values and controlling state IDs for joining to the full wrench. Different component percentiles can come from different tests.")
     for (panel,v),t in targets.groupby(["panel","magnet_volume_fraction"],sort=False):
         if panel=="All installations":
             continue
@@ -152,7 +166,7 @@ def useful_results(steady,driven,targets):
         ],[84,62,123,61,59,112])
         para(f"Sample size n = {t.n.iloc[0]}. Zero-value ties use an arbitrary representative state. "
              "See useful_results_max_p90.csv for signed values, the P90 speed and Reynolds number, and the installed layout.", "Small")
-    b.chapter("02  /  AIR-DRIVEN SUPPLEMENT","Motion-correlated transverse cylinder")
+    b.chapter("02  /  DRIVEN CYLINDER","Prescribed transverse motion in air")
     if driven.empty:
         para("No source-matched histories met the operating and acceleration limits.")
         return
@@ -160,14 +174,17 @@ def useful_results(steady,driven,targets):
     for _,s in driven.groupby("case_id",sort=False):
         r=maxrow(s,G)
         rows.append((tunnel_name(r.tunnel_side_m,r.orientation),f"{100*r.target_maximum_blockage:g}%",
-                     f"V{100*r.magnet_volume_fraction:g}",fmt(r.speed_mps),r.operating_group,
-                     fmt(r.acceleration_peak_mps2),fmt(r[G],4),fmt(s[B].max(),4)))
-    table(["Installation","Blockage","Volume","U [m/s]","Peak G history","Peak a [m/s²]","||G||F [T/m]","Local B [T]"],
-          rows,[96,52,47,48,89,64,57,48])
-    para("These rows cover Blackburn and Melbourne's phase-locked lift component, body inertia and gravity. Mean drag, "
-         "unsteady drag and residual lift were left outside the reconstructed wrench. This table sizes the specified "
-         "transverse demand only. The separate CSV provides the same max/P90 extraction for the available driven histories. "
-         "With small sample sizes the observed P90 can equal the maximum.")
+                     f"V{100*r.magnet_volume_fraction:g}",fmt(r.speed_mps),f"{100*r.A_over_D:.2f}%",f"{r.reduced_velocity:.2f}",
+                     fmt(r.acceleration_peak_mps2),fmt(r[G],4)))
+    table(["Installation","Blockage","Volume","U [m/s]","A/D","U/(fD)","Peak a [m/s²]","Peak ||G||F [T/m]"],
+          rows,[104,54,50,56,43,46,69,79])
+    para("Each row gives the history with the largest gradient for that campaign at Re = 160,000. A/D is the "
+         "one-sided travel amplitude divided by diameter. U/(fD) is the reduced velocity, with f the drive frequency. "
+         "Lower reduced velocity at fixed U and D means a faster drive.")
+    para("The gradient supplies the force needed for the prescribed body acceleration after accounting for gravity and "
+         "Blackburn and Melbourne's motion-correlated lift. This load reconstruction covers the transverse history. It "
+         "omits mean and unsteady drag and residual lift. Each selected arrangement is a centred dipole with zero torque "
+         "demand, so its solved field at the magnet is zero. The driven target CSV reports gradient maxima and P90 values.")
 
 
 def coverage(df,manifest):
@@ -189,10 +206,9 @@ def coverage(df,manifest):
          "The smaller tunnel retains 20% at 46.0 m/s. The 1 m tunnel retains 10% and 20%. For driven crossflow, "
          "the larger diameter also reduces acceleration at matched Re and drive ratios. The 0.6 m tunnel retains "
          "20% blockage and the 1 m tunnel retains 10% and 20% at the provisional 50 m/s² acceleration screen.")
-    chart(b.coverage_chart(df),"source_matched_airspeeds")
-    para("Water-channel Re = 4,000, the SC(2)-0714 section and phase-unresolved inline data are outside the solved portfolio. "
-         "The source working explains which evidence each uploaded paper provides. The coverage CSV records rejected geometry "
-         "and speed combinations.", "Small")
+    chart(b.coverage_chart(df, low=5),"source_matched_airspeeds")
+    para("The plot shows source-matched states within the 5–50 m/s planning window. The coverage CSV records the "
+         "geometry, speed and acceleration filters for every campaign slot.", "Small")
 
 
 def hardware(candidates,selected,sensitivity):
@@ -206,20 +222,28 @@ def hardware(candidates,selected,sensitivity):
          "torques but has no uniform-field torque about its own magnetic axis. Cuboid and Ahmed candidates must span all six wrench directions. "
          "The wing uses the published symmetry-plane force and moment. The cylinder cases do not prescribe an aerodynamic roll moment. "
          "The residual threshold for a solved state is 10<super>−6</super> on the relative scaled wrench error.")
-    table(["Layout","Auxiliary positions","Auxiliary directions","Main direction trial"],[
-        ("L1","± body y","± body z","Body +x, +y or +z"),
-        ("L2","± body y","± body y","Body +x, +y or +z"),
-        ("L3","± body z","± body y","Body +x, +y or +z"),
-        ("L4","± body z","± body z","Body +x, +y or +z"),
-        ("L5","± body y and ± body z","± body z and ± body y","Body +x, +y or +z"),
-    ],[60,150,145,146])
     para("The assembly is capped at 0.30H across its full installed width, height and length in body and tested tunnel axes. "
          "Oblique blocks are physically rotated and reduced if needed. Each V10 is one tenth of that layout's capped V100 "
-         "volume, with auxiliary centres held at the same offsets. Nominal N52 remanence is represented by the grade-table "
-         "minimum of 1.43 T, with 7,500 kg/m³ magnet density.")
-    cad("naca0012_T060*single_body_xz30.png",137)
-    cad("naca0012_T060*single_tunnel_x_at_last_pose.png",137)
+         "volume, with auxiliary centres held at the same offsets. The sizing model uses a generic N52 remanence of "
+         "1.43 T and density of 7,500 kg/m³.")
     data=b.export_candidate_peaks(candidates)
+    para("These three NACA 0012 views compare tested main-magnet directions at the same 45° pitch. Each view pairs "
+         "an opaque exterior with an outline that reveals the gold magnet and its magnetisation arrow. Each direction "
+         "stays fixed to the wing throughout the campaign.", "Small")
+    wing_id="naca0012_T060_b10_h_v100"
+    wing=data[data.case_id==wing_id].set_index("magnet_set_name")
+    wing_volume=candidates[candidates.case_id==wing_id].groupby("magnet_set_name").magnet_volume_m3.first()
+    for name,label in [
+        ("single_body_x","Wing-aligned +x, along the chord"),
+        ("single_body_xz30","30° from wing +x towards wing +z"),
+        ("single_tunnel_x_at_last_pose","Aligned with tunnel +x at the illustrated pitch"),
+    ]:
+        r=wing.loc[name]
+        para(f"<b>{label}.</b> {fmt(wing_volume.loc[name]*1e6)} cm³. {r.feasible_states}/{r.total_states} eligible states. "
+             f"Peak local ||B|| {fmt(r.max_B_local_T,4)} T. Peak ||G||F {fmt(r.max_G_frobenius_Tpm,4)} T/m.", "Small")
+        cad(f"naca0012_T060_b10_h_v100_{name}.png",110)
+    para("CAD and peaks use the 0.6 m horizontal tunnel, 10% blockage and V100. Fit volume varies with direction. The next page lists the five "
+         "auxiliary layouts and their results for the corresponding cuboid.", "Small")
     b.report_hardware_variants(data,standalone=True)
     b.report_roll_detail(standalone=True)
 
@@ -240,7 +264,7 @@ def hardware(candidates,selected,sensitivity):
     fixed=example[example.selection_mode=="fixed_hardware"].set_index("operating_group")
     swap=example[example.selection_mode=="independent_group"]
     table(["0.6 m horizontal cuboid, V100","Swap layout","J [T]","Fixed layout","J [T]"],[
-        (r.operating_group,short_set(r.magnet_set_name),fmt(getattr(r,J),4),
+        (steady_state(r.operating_group),short_set(r.magnet_set_name),fmt(getattr(r,J),4),
          short_set(fixed.loc[r.operating_group,"magnet_set_name"]),fmt(fixed.loc[r.operating_group,J],4))
         for r in swap.itertuples()
     ],[167,107,62,103,62])
@@ -277,26 +301,49 @@ def arrow(d,x0,y0,x1,y1,color=INK,width=1.8):
 
 
 def coil_graphic():
-    d=Drawing(W,225)
-    d.add(Rect(10,17,480,195,fillColor=colors.HexColor("#edf3f8"),strokeColor=None))
-    d.add(String(25,194,"Opposite-current coaxial pair · local field about the midpoint",fontName="Helvetica-Bold",fontSize=10,fillColor=INK))
-    d.add(Line(51,106,440,106,strokeColor=GREY,strokeDashArray=[4,3]))
-    d.add(String(449,103,"+x",fontSize=8,fillColor=INK))
-    for x,sign in [(119,1),(374,-1)]:
-        for y in (52,159):
-            d.add(Circle(x,y,9,fillColor=colors.HexColor("#e0a660"),strokeColor=INK))
-            label="+" if (y==159)==(sign==1) else "−"
-            d.add(String(x,y-3,label,textAnchor="middle",fontName="Helvetica-Bold",fontSize=11,fillColor=INK))
-        d.add(Line(x,62,x,149,strokeColor=colors.HexColor("#bd813d"),strokeWidth=2))
-    d.add(String(65,32,"Loop centres at ±a, equal turns N",fontSize=8,fillColor=GREY))
-    d.add(Circle(245,106,4,fillColor=INK,strokeColor=None))
-    arrow(d,245,106,298,137,ACCENT,2.7)
-    d.add(String(303,140,"Dipole m, tilted 30°",fontSize=9,fillColor=ACCENT))
-    arrow(d,245,106,309,87,colors.HexColor("#26734c"),2.7)
-    d.add(String(312,75,"Resulting force Gm",fontSize=9,fillColor=colors.HexColor("#26734c")))
-    d.add(String(178,78,"B_C = 0",fontSize=9,fillColor=INK))
-    d.add(String(177,62,"G = diag(g, −g/2, −g/2)",fontSize=8,fillColor=INK))
-    d.add(String(270,32,"Side view. Signs show opposite current senses.",fontSize=8,fillColor=GREY))
+    d=Drawing(W,205)
+    copper=colors.HexColor("#bd813d")
+    force=colors.HexColor("#26734c")
+
+    def label(x,y,value,bold=False,size=8,color=INK):
+        d.add(String(x,y,value,textAnchor="middle",fontSize=size,fillColor=color,
+                     fontName="Helvetica-Bold" if bold else "Helvetica"))
+
+    def pair(x,y,angle):
+        ux,uy=math.cos(angle),math.sin(angle)
+        d.add(Line(x-57*ux,y-57*uy,x+57*ux,y+57*uy,
+                   strokeColor=GREY,strokeWidth=.6,strokeDashArray=[3,3]))
+        for sign in (-1,1):
+            cx,cy=x+sign*40*ux,y+sign*40*uy
+            d.add(Line(cx-16*uy,cy+16*ux,cx+16*uy,cy-16*ux,
+                       strokeColor=copper,strokeWidth=3))
+
+    label(W/2,190,"Requested force points along tunnel +x. The magnet points along +x in all three panels.",True,9)
+    for x,title in [(84,"A  Pair along x"),(250,"B  Pairs along y and z"),(416,"C  Pair at 45°")]:
+        d.add(Rect(x-77,36,154,140,fillColor=colors.HexColor("#edf3f8"),strokeColor=None))
+        label(x,160,title,True,9)
+        arrow(d,x-63,55,x-42,55,GREY,.8)
+        arrow(d,x-63,55,x-63,75,GREY,.8)
+        label(x-38,52,"x")
+        label(x-63,78,"y")
+    pair(84,103,0)
+    pair(250,103,math.pi/2)
+    pair(416,103,math.pi/4)
+    for x in (84,250,416):
+        arrow(d,x-21,103,x+9,103,ACCENT,2.1)
+    for x in (84,250):
+        arrow(d,x,80,x+48,80,force,2)
+        label(x+54,68,"F_x",color=force)
+    arrow(d,416,93,430,93,force,2)
+    arrow(d,416,93,416,132,force,2)
+    label(437,86,"F_x",color=force)
+    label(403,130,"F_y",color=force)
+    for sign in (1,-1):
+        cx=250+sign*52
+        d.add(Circle(cx,122,6,fillColor=None,strokeColor=copper,strokeWidth=1.4))
+        label(cx,119,"•" if sign==1 else "×",True,8,copper)
+    label(W/2,19,"Copper: coil pair  •  Blue: magnetisation  •  Green: force  •  Dashed: pair axis",size=8)
+    label(W/2,6,"Centred gradient modes. The z-axis symbols are offset for visibility.",size=7,color=GREY)
     return d
 
 
@@ -306,23 +353,20 @@ def merit_and_sensitivity(sensitivity,ranking):
          "the same scale so the solver can compare eligible solutions. The cube size changes how strongly gradient is "
          "weighted. The score contains no coil positions, turns, electrical resistance, current limits or heating.")
     chart(coil_graphic(),"coil_pair_and_oblique_dipole")
-    para("An ideal opposite-current loop pair has B<sub>C</sub> = 0 at its centre and produces an axial gradient g. "
-         "Symmetry and zero divergence give transverse gradients −g/2. For a dipole tilted 30° in the x–z plane, "
-         "the local force is mg[0.866, 0, −0.25]. An additional field can provide a torque, for example a z-directed "
-         "field supplies a pitch torque through the dipole's x component. This coil pair alone supplies one gradient mode.")
-    para("For thin circular loops of radius R at ±a, the on-axis derivative is "
-         "g = 3 mu<sub>0</sub> N I R² a / (R² + a²)<super>5/2</super>. "
-         "The two examples below achieve the same g, the same force on the same dipole and the same J for L = 0.30 m.")
-    q=.5
-    example=[]
-    for radius in (.20,.30):
-        a=radius/2
-        current=q*(radius**2+a**2)**2.5/(3*4*math.pi*1e-7*100*radius**2*a)
-        example.append((fmt(radius),fmt(a),100,f"{current:.0f}",.5,fmt(math.sqrt(1.5)*q),fmt(.3/math.sqrt(12)*math.sqrt(1.5)*q)))
-    table(["R [m]","a [m]","Turns/loop","I [A]","g [T/m]","||G||F [T/m]","J [T]"],example,[62,62,70,69,72,84,82])
-    para("Equal J can require different currents in different coil geometries. Real feasibility depends on whether the "
-         "installed coils span the required field and gradient modes at the model location, plus their current and thermal limits. "
-         "The example is a local field demonstration.")
+    para("Each centred pair uses opposite currents in its two loops. It produces zero field at the midpoint, an axial "
+         "gradient g and two transverse derivatives −g/2. Rotating the pair rotates that gradient pattern. The dipole "
+         "force is Gm, so for the +x magnet only the x column of G determines the force.")
+    table(["Arrangement","Result at the magnet","What the coil system has to do"],[
+        ("A. Axial pair","G_xx = g, with zero lateral force.","One gradient channel produces the target directly."),
+        ("B. Two transverse pairs","Reverse both transverse pair gradients. Their sum reproduces the full gradient tensor in A, with the same force and J.",
+         "Two gradient channels must each supply their share with the correct polarity."),
+        ("C. One 45° pair","At the same axial gradient scale g, the rotated tensor has the same J. G_xx = g/4 and G_yx = 3g/4, so there is also lateral force.",
+         "To meet the original force target, increase the axial contribution and cancel the shear using other modes."),
+    ],[105,203,193])
+    para("A shear gradient G_xy also gives an x-force if the dipole has a y component. With the +x dipole drawn here "
+         "its equal partner G_yx gives a y-force. This is why a score based on the field and gradient norms cannot "
+         "tell which coil channels are needed. Use the coil gains, resistance and current limits to estimate the "
+         "effort once a coil arrangement is defined.")
 
     b.chapter("06  /  RANKING SENSITIVITY","Does changing reference length matter?")
     primary=sensitivity[sensitivity.metric=="L_model"].set_index("case_id")
@@ -489,8 +533,7 @@ def source_working(df,driven,hardware_table):
     table(["Evidence","Role in this study"],[
         ("Achenbach, Jann and Geisbauer, Meile, Chinwicharnam and Thipyopas","Steady sphere, cuboid, Ahmed and NACA 0012 respectively. The source-specific pages show the coefficient and coordinate conversions."),
         ("Ajmal et al.","Stationary cylinder mean drag. Forced spectra and relative phase are contextual."),
-        ("Blackburn and Melbourne","Air-driven, motion-correlated transverse lift for screened drive points."),
-        ("Matsuda, Nishihara, Azadeh-Ranjbar and Li","Audited for geometry, wake, motion or force comparison. The published data do not supply the missing full air wrenches used by the sizing targets."),
+        ("Blackburn and Melbourne","Motion-correlated transverse lift from prescribed cylinder oscillation in air."),
     ],[228,273])
     b.report_sources(df,None,hardware_table,standalone=True)
 
@@ -518,12 +561,12 @@ def source_working(df,driven,hardware_table):
          "describe removal of transducer inertia and the decomposition by motion phase. Fig. 7(a,c), p. 422, gives signed "
          "RMS lift components. Read squares for the acceleration component and triangles for the velocity component. "
          +ref("Blackburn and Melbourne, Fig. 7 and Eqs. 7–10","https://doi.org/10.1006/jfls.1997.0086"))
-    table(["Label","A/D","U/(fD)","C_L,a RMS","C_L,v RMS","Retained campaign sizes"],[
-        (r.state,fmt(r.A_over_D),fmt(r.reduced_velocity),fmt(r.CL_a_rms),fmt(r.CL_v_rms),
-         "; ".join(f"{h:g} m/{100*x:g}%" for h,x in driven[driven.operating_group==r.state][
+    table(["A/D","U/(fD)","C_L,a RMS","C_L,v RMS","Retained campaign sizes"],[
+        (f"{100*r.A_over_D:.2f}%",fmt(r.reduced_velocity),fmt(r.CL_a_rms),fmt(r.CL_v_rms),
+         ", ".join(f"{h:g} m / {100*x:g}%" for h,x in driven[driven.operating_group==r.state][
                    ["tunnel_side_m","target_maximum_blockage"]].drop_duplicates().itertuples(index=False,name=None)))
         for r in v.itertuples()
-    ],[96,53,62,72,72,146])
+    ],[68,75,75,75,208])
     para("Map the paper's transverse direction to +z in the tunnel. For phase theta = 2 pi f t, choose "
          "z = −A cos(theta), so acceleration and velocity have the positive cos and sin references used in Eq. 7. "
          "Multiply each signed RMS value by sqrt(2) to recover its sinusoidal peak. Then "
@@ -532,62 +575,34 @@ def source_working(df,driven,hardware_table):
          "in its acceleration-correlated fluid force.")
     r=maxrow(driven,G)
     para(f"The limiting driven row is {tunnel_name(r.tunnel_side_m,r.orientation)}, {case_label(r)}, "
-         f"{operation(r)}. The resized drive uses {fmt(r.frequency_Hz)} Hz at U = {fmt(r.speed_mps)} m/s and "
+         f"with A/D = {100*r.A_over_D:.2f}% and U/(fD) = {r.reduced_velocity:.2f}. "
+         f"The resized drive uses {fmt(r.frequency_Hz)} Hz at U = {fmt(r.speed_mps)} m/s and "
          f"peak acceleration {fmt(r.acceleration_peak_mps2)} m/s². The reconstructed aerodynamic lift is "
          f"{fmt(r.Fz_aero_N)} N at the controlling phase, with {fmt(r.Fz_inertial_demand_N)} N of prescribed body inertia "
-         f"and {fmt(r.Fz_gravity_N)} N of gravity in z.")
+         f"and {fmt(r.Fz_gravity_N)} N of gravity in z. The magnetic force is inertia minus lift and gravity, "
+         f"or {fmt(r.Fz_mag_req_N,4)} N along tunnel +z at this phase.")
     para("Only drive points at or below a provisional 50 m/s² are solved. At fixed Re, diameter scaling changes frequency "
          "as D<super>−2</super> and acceleration as D<super>−3</super>. Sectional motion-correlated lift is applied "
          "over the full span as a coherent approximation, supported by the comparison in Fig. 9 for the source's 2.7% "
-         "motion. Free ends, residual lift and missing drag limit the transfer. The labels describe reduced frequency "
-         "relative to the source shedding band. They do not assign specific wake topologies.")
-    cad("cylinder_crossflow_T060*b20*single_body_x.png",137)
+         "motion. Free ends, residual lift and missing drag limit the transfer. The amplitude and reduced velocity "
+         "identify the imposed motion conditions.")
+    cad("cylinder_crossflow_T060*b20*single_body_x.png",125,crop_top=.08)
+    para("Representative centred magnet in the driven cylinder. The left view shows the exterior. The right view "
+         "shows the installed block and its magnetisation direction.", "Small")
 
-    b.chapter("09F  /  SOURCE WORKING","Inline and free-ended cylinder evidence")
-    para("Matsuda et al., Table 1 and Figs. 3, 5 and 7–9, report free inline response in air for D = 200 mm, "
-         "aspect ratios 1.8 and 6.8 and 400 mm end plates. Fig. 3 places the two response regions around reduced "
-         "velocities of roughly 2 and 3. The images distinguish more symmetric first-branch shedding in one degree "
-         "of freedom and alternating shedding in the second branch. The paper provides response amplitudes and "
-         "mass-damping ranges. It does not give phase-resolved air drag to pair with model inertia. "
-         +ref("Matsuda et al., Table 1 and Figs. 3 and 7–9","https://doi.org/10.1016/S0167-6105(02)00336-7"))
-    para("Nishihara et al. measured forced inline fluid loads at Re 17,000 and 34,000, A/D = 0.05, in water. "
-         "The 50 mm by 490 mm cylinder had a 3–4 mm tip clearance. Eq. 9 and Fig. 8 give a drag fundamental with "
-         "a displacement phase reference after tare. At Re 34,000, approximate reads illustrate the two excitation branches. "
-         "They guide a future inline air experiment. They remain outside the air sizing tables. "
-         +ref("Nishihara et al., Table 1, Eq. 9 and Fig. 8","https://doi.org/10.1016/j.jfluidstructs.2005.02.003"))
-    table(["Reduced velocity U/(fD)","Drag amplitude |C_D|, approx.","Phase relative to x, approx."],
-          [(2.2,.46,"+20°"),(2.7,.24,"0°"),(3.45,.05,"+36°"),(5,.10,"−88°")],[150,181,170])
-    para("Azadeh-Ranjbar et al., Table II, reports free-ended air response. At aspect ratios 28.8, 10 and 5 the "
-         "resonance Re values are 844, 1,714 and 2,946 and the peak A/D values are 0.15, 0.27 and 0.49. "
-         "These are support-dependent free responses. They show why a short free-ended article needs its own force "
-         "evidence, especially at higher Reynolds number. "
-         +ref("Azadeh-Ranjbar et al., Table II","https://doi.org/10.1063/1.5042774"))
-    para("Next evidence for an inline wrench is an air measurement of axial drag synchronised with displacement, "
-         "with a still-air inertial tare. For transverse demand beyond the motion-correlated component, obtain "
-         "simultaneous lift and drag records and a reproducible absolute phase reference. Include span and end condition.")
-
-    b.chapter("09G  /  SOURCE WORKING","Lower-Re Ahmed check")
-    para("Li et al. tested a 522 × 194.5 × 144 mm 35° Ahmed body at Re 640,000 for the force measurements, "
-         "with a floor-mounted six-component balance. Section 2.2 and Fig. 10 publish drag, side force and lift. "
-         "They do not tabulate roll, pitch or yaw moments for these comparisons. At the source length and air viscosity "
-         "used here, Re 640,000 corresponds to about 18.1 m/s. Approximate Fig. 10 reads for the 35° series are below. "
-         +ref("Li et al., §2.2 and Figs. 5 and 10","https://doi.org/10.1016/j.expthermflusci.2025.111488"))
-    table(["Yaw","Li C_D","Li C_L","Li |C_S|","Meile C_D","Meile C_L","Meile |C_S|"],
-          [("0°",.318,0,0,.29,0,0),("15°",.44,.31,.58,.43,.57,.81)],[68,70,70,73,72,72,76])
-    para("The side-force column compares magnitudes because the published yaw and lateral force signs differ. "
-         "The lift and side-force changes show why importing only drag or borrowing the high-Re moments would "
-         "leave the lower-Re wrench underdetermined. A lower-Re six-axis Ahmed case needs the three moments and "
-         "their reference point at the same yaw and Re.")
+    para("A complete driven air wrench needs simultaneous lift, drag and displacement with an absolute phase reference, "
+         "a still-air inertial tare, and documented span and end conditions. A lower-Re six-axis Ahmed case needs all "
+         "three forces and moments at matched yaw, with their moment reference point.")
 
 
 def case_index(df):
     section("10","Case index and reproducibility")
     para("Case IDs encode family, tunnel side in centimetres, maximum blockage percent, horizontal or upward flow, "
          "and magnet volume percent. The selected tables identify the physical magnet arrangement and each controlling "
-         "state. For the driven supplement, use the separately exported history targets.")
+         "state. For the prescribed transverse cylinder motion, use the separately exported history targets.")
     table(["File","Contents"],[
         ("useful_results_max_p90.csv","Steady maximum and observed P90 magnitudes by installation and volume. Signed value, source state, U, Re and selected hardware are retained."),
-        ("driven_history_max_p90.csv","The same statistic for the available phase-locked transverse histories, with one peak per history and metric."),
+        ("driven_history_max_p90.csv","Gradient maximum and P90 for the motion-correlated transverse histories, with one peak per history and metric."),
         ("coverage.csv / candidates.csv","Source-matched case grid, exclusions and all solved candidate states."),
         ("selected_primary.csv","Fixed and independently swappable selections, with state forces, moments, field and gradient."),
         ("mass_cap_campaigns.csv / mass_cap_candidates.csv / mass_cap_selected.csv","Separate mass-limit case status, failed candidates and re-solved results."),
@@ -601,10 +616,48 @@ def case_index(df):
         s=b.selected_slice(df,h,o)
         table(["Model / blockage","Magnet V%","Installed set","Peak local B [T]","Peak ||G||F [T/m]","G state U [m/s] / Re"],[
             (b.FAMILIES[g.family][0]+f" / {100*g.target_maximum_blockage:g}%",f"{100*g.magnet_volume_fraction:g}",
-             short_set(g.magnet_set_name),fmt(p[B].max(),4),fmt(g[G],4),f"{fmt(g.speed_mps)} / {g.Re:,.0f}")
+             short_set(g.magnet_set_name),"—" if g.family==AIR else fmt(p[B].max(),4),
+             fmt(g[G],4),f"{fmt(g.speed_mps)} / {g.Re:,.0f}")
             for _,p in s.groupby("case_id",sort=False) for g in [maxrow(p,G)]
         ],[124,53,79,73,79,93])
-        para("Driven cylinder rows represent the transverse supplement. Fields and gradients can be controlled by different states.", "Small")
+        para("The dash in a driven cylinder row marks the zero field at its centred magnet. For steady cases, "
+             "field and gradient peaks can come from different states.", "Small")
+
+
+def references():
+    section("11","References")
+    para("Aerodynamic loads","Eyebrow")
+    for citation,title,link in [
+        ("Achenbach, E. (1972). J. Fluid Mech., 54, 565–575.",
+         "Experiments on the flow past spheres at very high Reynolds numbers","https://doi.org/10.1017/S0022112072000874"),
+        ("Jann, T. and Geisbauer, S. (2013). AIAA Paper 2013-1282.",
+         "Approximated Steady Aerodynamic Coefficients for Two Cuboids and a Hemispherical Shell Used in Airdrop Simulation",
+         "https://doi.org/10.2514/6.2013-1282"),
+        ("Meile, W. et al. (2016). Int. J. Heat Fluid Flow, 57, 34–47.",
+         "Non-symmetric bi-stable flow around the Ahmed body","https://doi.org/10.1016/j.ijheatfluidflow.2015.11.002"),
+        ("Chinwicharnam, K. and Thipyopas, C. (2016). Int. J. Micro Air Vehicles, 8, 3–20.",
+         "Comparison of Wing-Propeller Interaction in Tractor and Pusher Configuration","https://doi.org/10.1177/1756829316638206"),
+        ("Ajmal, M. et al. (2026). J. Fluids Struct., article 104658.",
+         "Experimental forced-oscillation measurements on vortex-induced vibration of a circular cylinder in high subcritical regime",
+         "https://doi.org/10.1016/j.jfluidstructs.2026.104658"),
+        ("Blackburn, H. M. and Melbourne, W. H. (1997). J. Fluids Struct., 11, 413–431.",
+         "Sectional Lift Forces for an Oscillating Circular Cylinder in Smooth and Turbulent Flows",
+         "https://doi.org/10.1006/jfls.1997.0086"),
+    ]:
+        para(f"{citation}<br/>{ref(title,link)}")
+    para("Geometry, magnetic suspension and material assumptions","Eyebrow")
+    for citation,title,link in [
+        ("Sawada, H., Suda, S. and Kunimasu, T. (2004). 24th ICAS Congress.",
+         "NAL 60cm Magnetic Suspension and Balance System","https://www.icas.org/icas_archive/ICAS2004/PAPERS/182.PDF"),
+        ("NASA Technical Reports Server. NTRS 19970008124.",
+         "Computer Program to Obtain Ordinates for NACA Airfoils","https://ntrs.nasa.gov/citations/19970008124"),
+        ("eSUN. Manufacturer's foamed-density specification.",
+         "ePLA-LW product data","https://www.esun3d.com/epla-lw-product"),
+        ("UK Health and Safety Executive. Guidance used to contextualise the 25 kg scenario.",
+         "Manual handling risk filters","https://www.hse.gov.uk/msd/manual-handling-risk-filters.htm"),
+    ]:
+        para(f"{citation}<br/>{ref(title,link)}")
+    para("The generic N52 sizing inputs are recorded in the requirement tool's data/magnet_grades.csv.", "Small")
 
 
 def main():
@@ -615,12 +668,11 @@ def main():
     b.FAMILIES["cylinder_parked"]=("Parked cylinder","#937548")
     selected=pd.read_csv(OUT/"selected_primary.csv",low_memory=False)
     active=selected[selected.selection_mode=="fixed_hardware"].copy()
-    active["B_O_norm_T"]=np.linalg.norm(active[["BOx_T","BOy_T","BOz_T"]],axis=1)
     steady=active[active.family!=AIR]
     driven=active[active.family==AIR]
     targets=target_rows(steady)
     targets.to_csv(OUT/"useful_results_max_p90.csv",index=False)
-    target_rows(driven).to_csv(OUT/"driven_history_max_p90.csv",index=False)
+    target_rows(driven,DRIVEN_KEYS).to_csv(OUT/"driven_history_max_p90.csv",index=False)
     candidates=pd.read_csv(OUT/"candidates.csv",low_memory=False)
     sensitivity=pd.read_csv(OUT/"selection_sensitivity.csv",keep_default_na=False)
     ranking=pd.read_csv(OUT/"hardware_rankings.csv")
@@ -635,6 +687,7 @@ def main():
     mass_study(active,pd.read_csv(OUT/"mass_cap_selected.csv",low_memory=False),pd.read_csv(OUT/"mass_cap_candidates.csv"))
     source_working(active,driven,candidates)
     case_index(active)
+    references()
     doc=Report(str(PDF),pagesize=(595.28,841.89),title="MSBS aerodynamic requirements",author="MSBS engineering study")
     doc.addPageTemplates(PageTemplate(id="Main",frames=[Frame(47,51,501,741.89,leftPadding=0,rightPadding=0)],
                                       onPage=footer))

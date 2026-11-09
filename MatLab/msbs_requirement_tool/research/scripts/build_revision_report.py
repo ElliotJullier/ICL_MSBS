@@ -1,5 +1,6 @@
 """Build the revision PDF and reproducible summary tables from MATLAB outputs."""
 from pathlib import Path
+from io import BytesIO
 from xml.sax.saxutils import escape
 import math
 
@@ -205,14 +206,16 @@ def scatter(peaks):
     return d
 
 
-def coverage_chart(df):
+def coverage_chart(df, low=.5):
     h=22*len(FAMILIES)
     d=Drawing(W,h+80)
     legend(d, 42, h+60)
     x,y,w=97,33,388
-    low,high=.5,50
+    high=50
     xf=lambda v: x+math.log(v/low,high/low)*w
-    for u in [.5,1,2,5,10,20,50]:
+    for u in (.5,1,2,5,10,20,50):
+        if u<low:
+            continue
         d.add(Line(xf(u),y,xf(u),y+h,strokeColor=GRID,strokeWidth=.6))
         d.add(String(xf(u),y-12,str(u),fontSize=8,textAnchor="middle",fillColor=GREY))
     for i,(family,(label,hexcol)) in enumerate(FAMILIES.items()):
@@ -297,11 +300,17 @@ def pair_diagram():
     return d
 
 
-def cad(pattern, height=196):
+def cad(pattern, height=196, crop_top=0):
     match=next(iter(sorted((OUT/"cad").glob(pattern))),None)
     if match:
-        x,y=ImageReader(str(match)).getSize()
-        STORY.append(Image(str(match),width=min(W,height*x/y),height=min(height,W*y/x),hAlign="CENTER"))
+        source=str(match)
+        if crop_top:
+            source=BytesIO()
+            with PILImage.open(match) as pic:
+                pic.crop((0,round(pic.height*crop_top),pic.width,pic.height)).save(source,format="PNG")
+            source.seek(0)
+        x,y=ImageReader(source).getSize()
+        STORY.append(Image(source,width=min(W,height*x/y),height=min(height,W*y/x),hAlign="CENTER"))
 
 
 def export_tables(df, peaks, operating_only=False):
@@ -547,12 +556,17 @@ def report_sources(df, reads, hardware, standalone=False):
          "qbc² C<sub>m</sub> about B-coordinate x = −c/4, then shift to C. Other mean force and moment components use midspan symmetry. "
          "Approximate figure reading precision is about 0.02–0.04 for force coefficients and 0.005–0.01 for moment. "
          +ref("NASA four-digit ordinate method","https://ntrs.nasa.gov/citations/19970008124"))
-    cad("naca0012_T060*single_body_x.png",144)
+    if not standalone:
+        cad("naca0012_T060*single_body_x.png",144)
     para("The magnet fit prism is between 10% and 55% chord. The available height is the lowest upper ordinate minus the "
          "highest lower ordinate throughout that interval. The sampled NACA profile and section prism are used for CAD, projected area "
          "and "+("LW-PLA" if standalone else "ABS")+" mass. The source AR of 1 is retained even at 20% blockage. Wall effects remain outside the sizing model.", "Small")
-    para("Both wing-aligned and tunnel-aligned blocks were evaluated. This view is body +x, along the wing chord at 45 deg. "+
-         ("The hardware section shows " if standalone else "Section 4 shows ")+"the same test attitude with the intermediate and tunnel-aligned blocks.", "Small")
+    if standalone:
+        para("The hardware section compares the wing-aligned, intermediate and tunnel-aligned block directions "
+             "at the same 45° pitch and reports their candidate peaks.", "Small")
+    else:
+        para("Both wing-aligned and tunnel-aligned blocks were evaluated. This view is body +x, along the wing chord at 45 deg. "
+             "Section 4 shows the same test attitude with the intermediate and tunnel-aligned blocks.", "Small")
     if standalone:
         return
 
@@ -675,7 +689,8 @@ def report_hardware_variants(hardware,standalone=False):
          f"{a.feasible_states}/{a.total_states}",fmt(a.max_B_local_T,4),fmt(a.max_G_frobenius_Tpm,4),fmt(a.max_J_T,4))
         for a in sample.itertuples()
     ],[56,109,43,48,86,91,68])
-    para("The single blocks test body +x, +y, +z, two 30 deg rotations from +x and tunnel +x at the last attitude. "
+    para(("The M-number identifies each candidate and links it to the CAD gallery. " if standalone else "")+
+         "The single blocks test body +x, +y, +z, two 30 deg rotations from +x and tunnel +x at the last attitude. "
          "A 0/5 row reports the best-fit fields from a rejected wrench solution. Read those values as diagnostic outputs. "
          "The full CSV identifies the controlling angle separately for B and G for every candidate and configuration.", "Small")
     chapter("04  /  CAD GALLERY" if standalone else "03A  /  CAD GALLERY", "Magnetisation across all 21 candidates")
