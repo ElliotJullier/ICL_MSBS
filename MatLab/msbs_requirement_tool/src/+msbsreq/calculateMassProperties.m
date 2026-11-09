@@ -9,7 +9,13 @@ end
 magnets = magnetSet.magnets;
 magnetMasses = reshape([magnets.mass_kg],[],1);
 magnetMassTotal = sum(magnetMasses);
-if isempty(cfg.mass.total_mass_override_kg)
+solidDensity = cfg.mass.solid_abs_density_kgm3;
+shellCentre = zeros(3,1);
+if ~isempty(solidDensity)
+    [shellMass,shellCentre,shellInertiaAtCentre] = localSolidMinusCavities(geometry,magnets,solidDensity);
+    totalMass = shellMass+magnetMassTotal;
+    totalMassSource = "solid_abs_minus_cavities";
+elseif isempty(cfg.mass.total_mass_override_kg)
     if isempty(cfg.mass.non_magnet_mass_kg)
         totalMass = cfg.mass.shell_mass_factor*magnetMassTotal;
         totalMassSource = "shell_mass_factor";
@@ -25,8 +31,10 @@ if totalMass < magnetMassTotal-1e-12
     error('msbsreq:MassBelowMagnetMass', ...
         'Total mass cannot be smaller than the summed magnet mass.');
 end
-shellMass = max(0,totalMass-magnetMassTotal);
-shellCentre = [0;0;0];
+if isempty(solidDensity)
+    shellMass = max(0,totalMass-magnetMassTotal);
+    shellInertiaAtCentre = localOuterInertia(geometry,shellMass);
+end
 
 weighted = shellMass*shellCentre;
 for i=1:numel(magnets)
@@ -39,23 +47,17 @@ else
 end
 if isempty(cfg.mass.centre_of_mass_override_B_m)
     centreOfMass = computedCoM;
-    centreSource = "hybrid_model";
+    centreSource = totalMassSource;
 else
     centreOfMass = cfg.mass.centre_of_mass_override_B_m(:);
     centreSource = "override";
 end
 
 if isempty(cfg.mass.inertia_override_B_kgm2)
-    I = localOuterInertia(geometry,shellMass);
-    rShell = shellCentre-centreOfMass;
-    I = I + shellMass*((rShell.'*rShell)*eye(3)-rShell*rShell.');
+    I = shellInertiaAtCentre+localParallelAxis(shellMass,shellCentre-centreOfMass);
     for i=1:numel(magnets)
-        d=magnets(i).dimensions_local_m;
         m=magnets(i).mass_kg;
-        I_local=m/12*diag([d(2)^2+d(3)^2,d(1)^2+d(3)^2,d(1)^2+d(2)^2]);
-        I_body=magnets(i).R_BM*I_local*magnets(i).R_BM.';
-        r=magnets(i).centre_B_m-centreOfMass;
-        I=I+I_body+m*((r.'*r)*eye(3)-r*r.');
+        I=I+localMagnetInertia(magnets(i),m,centreOfMass);
     end
     inertiaSource="hybrid_model";
 else
@@ -79,6 +81,74 @@ massProperties.total_mass_source=totalMassSource;
 massProperties.centre_of_mass_source=centreSource;
 massProperties.inertia_source=inertiaSource;
 massProperties.model_note="Magnets are explicit cuboids; remaining mass is uniformly distributed through the outer primitive and combined by parallel-axis shifts.";
+if isempty(solidDensity)
+    if isempty(cfg.mass.centre_of_mass_override_B_m)
+        massProperties.centre_of_mass_source="hybrid_model";
+    end
+else
+    massProperties.inertia_source=totalMassSource;
+    massProperties.model_note="Solid ABS with full magnet volumes removed; rotated magnets are added using the parallel-axis theorem.";
+end
+end
+
+function [mass,centre,inertia] = localSolidMinusCavities(geometry,magnets,density)
+outerMass = geometry.volume_m3*density;
+outerCentre = zeros(3,1);
+if geometry.type=="custom"
+    if ~isfield(geometry.shape,'solid_centroid_B_m') || ...
+            ~isfield(geometry.shape,'solid_unit_density_inertia_B_m5')
+        error('msbsreq:MissingSolidGeometry','Custom solid geometry needs a centroid and unit-density inertia.');
+    end
+    outerCentre = geometry.shape.solid_centroid_B_m(:);
+    outerInertia = density*geometry.shape.solid_unit_density_inertia_B_m5;
+else
+    outerInertia = localOuterInertia(geometry,outerMass);
+end
+mass = outerMass;
+firstMoment = outerMass*outerCentre;
+inertiaAtOrigin = outerInertia+localParallelAxis(outerMass,outerCentre);
+for i=1:numel(magnets)
+    for j=1:i-1
+        if localCavitiesOverlap(magnets(i),magnets(j))
+            error('msbsreq:OverlappingSolidCavities','Solid ABS magnet cavities must be disjoint.');
+        end
+    end
+    cavityMass = magnets(i).volume_m3*density;
+    mass = mass-cavityMass;
+    firstMoment = firstMoment-cavityMass*magnets(i).centre_B_m;
+    inertiaAtOrigin = inertiaAtOrigin-localMagnetInertia(magnets(i),cavityMass,zeros(3,1));
+end
+if ~(isfinite(mass) && mass>0)
+    error('msbsreq:InvalidCavityMass','Magnet cavities must leave positive ABS mass.');
+end
+centre = firstMoment/mass;
+inertia = inertiaAtOrigin-localParallelAxis(mass,centre);
+end
+
+function overlap = localCavitiesOverlap(a,b)
+% Separating axis test for two oriented boxes. Contact has zero overlap volume.
+axes = [a.R_BM b.R_BM];
+for i=1:3
+    for j=1:3
+        axes(:,end+1)=cross(a.R_BM(:,i),b.R_BM(:,j)); %#ok<AGROW>
+    end
+end
+lengths=vecnorm(axes);
+axes=axes(:,lengths>1e-12)./lengths(lengths>1e-12);
+reach=(a.dimensions_local_m.'*abs(a.R_BM.'*axes)+ ...
+    b.dimensions_local_m.'*abs(b.R_BM.'*axes))/2;
+separation=abs((a.centre_B_m-b.centre_B_m).'*axes);
+overlap=all(separation<reach-1e-12);
+end
+
+function inertia = localMagnetInertia(magnet,mass,aboutPoint)
+d = magnet.dimensions_local_m;
+I = mass/12*diag(sum(d.^2)-d.^2);
+inertia = magnet.R_BM*I*magnet.R_BM.'+localParallelAxis(mass,magnet.centre_B_m-aboutPoint);
+end
+
+function inertia = localParallelAxis(mass,r)
+inertia = mass*((r.'*r)*eye(3)-r*r.');
 end
 
 function I=localOuterInertia(geometry,mass)

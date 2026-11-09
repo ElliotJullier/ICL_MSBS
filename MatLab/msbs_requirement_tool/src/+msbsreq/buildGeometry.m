@@ -98,13 +98,15 @@ for i = 1:numel(fields)
     name = fields{i};
     value = shape.(name);
     if isnumeric(value)
-        if contains(name, 'area')
+        if strcmp(name,'solid_unit_density_inertia_B_m5')
+            shape.(name) = value * scale^5;
+        elseif contains(name, 'area')
             shape.(name) = value * scale^2;
         elseif contains(name, 'volume')
             shape.(name) = value * scale^3;
         elseif contains(name, 'dimension') || contains(name, 'diameter') || ...
                 contains(name, 'length') || contains(name, 'span') || contains(name, 'radius') || ...
-                contains(name, 'centre') || contains(name, 'vertices')
+                contains(name, 'centre') || contains(name, 'vertices') || strcmp(name,'solid_centroid_B_m')
             shape.(name) = value * scale;
         end
     end

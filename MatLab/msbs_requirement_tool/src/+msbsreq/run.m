@@ -23,7 +23,9 @@ massProperties=repmat(msbsreq.calculateMassProperties(cfg,geometry,magnetSets(1)
 for i=2:numel(magnetSets)
     massProperties(i)=msbsreq.calculateMassProperties(cfg,geometry,magnetSets(i));
 end
-warnings(end+1,1)="Mass properties use the hybrid explicit-magnet plus uniformly distributed shell approximation unless overridden.";
+if isempty(cfg.mass.solid_abs_density_kgm3)
+    warnings(end+1,1)="Mass properties use the hybrid explicit-magnet plus uniformly distributed shell approximation unless overridden.";
+end
 if cfg.motion.mode=="harmonic" || localScenarioAttitudeVaries(cfg.scenarios)
     warnings(end+1,1)="Body attitude can vary while blockage is reported only at the nominal configured orientation.";
 end

@@ -1,4 +1,10 @@
-# Aerodynamic requirements research - 6 November 2026
+# Aerodynamic requirements research
+
+## November 2026 revision
+
+Use `MSBS_Aerodynamic_Requirements_Revision.pdf` and `REVISION_WORK_LOG.md` for the matched-Re portfolio with a capped magnet envelope and solid-body mass properties. `run_requirements_revision` reproduces the new study.
+
+## Original portfolio
 
 Read `MSBS_Aerodynamic_Requirements_Report.pdf` for the complete working, assumptions, per-component targets and every study comparison. The matching Markdown is editable source text. Results are conditional engineering screens; see the evidence tiers in the report.
 

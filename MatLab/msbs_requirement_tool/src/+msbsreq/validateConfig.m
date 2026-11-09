@@ -112,6 +112,16 @@ for grade=requestedGrades(:).'
 end
 
 localPositive(cfg.mass.shell_mass_factor,'shell mass factor');
+if ~isempty(cfg.mass.solid_abs_density_kgm3)
+    localPositive(cfg.mass.solid_abs_density_kgm3,'solid ABS density');
+    if ~isempty(cfg.mass.non_magnet_mass_kg) || ~isempty(cfg.mass.total_mass_override_kg) || ...
+            ~isempty(cfg.mass.inertia_override_B_kgm2) || ~isempty(cfg.mass.centre_of_mass_override_B_m)
+        error('msbsreq:ConflictingSolidMass','Solid ABS density cannot be combined with mass property overrides.');
+    end
+    if ~cfg.magnets.check_containment
+        error('msbsreq:UncheckedSolidCavities','Solid ABS density requires checked magnet containment.');
+    end
+end
 if ~isempty(cfg.mass.total_mass_override_kg),localPositive(cfg.mass.total_mass_override_kg,'total mass override');end
 if ~isempty(cfg.mass.centre_of_mass_override_B_m),localThreeVector(cfg.mass.centre_of_mass_override_B_m,'centre-of-mass override');end
 if cfg.mass.shell_mass_factor<1 && isempty(cfg.mass.total_mass_override_kg)
